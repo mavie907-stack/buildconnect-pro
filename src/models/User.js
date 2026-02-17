@@ -1,0 +1,67 @@
+const { DataTypes, Model } = require('sequelize');
+const bcrypt = require('bcryptjs');
+const sequelize = require('../config/database');
+
+class User extends Model {
+  async comparePassword(candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
+  }
+
+  toPublicJSON() {
+    const values = this.toJSON();
+    delete values.password;
+    return values;
+  }
+}
+
+User.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      validate: { isEmail: true },
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    role: {
+      type: DataTypes.ENUM('client', 'professional', 'admin'),
+      defaultValue: 'professional',
+    },
+    company: { type: DataTypes.STRING, allowNull: true },
+    location: { type: DataTypes.STRING, allowNull: true },
+    bio: { type: DataTypes.TEXT, allowNull: true },
+    is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+    is_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
+    last_login_at: { type: DataTypes.DATE, allowNull: true },
+  },
+  {
+    sequelize,
+    tableName: 'users',
+    hooks: {
+      beforeCreate: async (user) => {
+        if (user.password) {
+          user.password = await bcrypt.hash(user.password, 12);
+        }
+      },
+      beforeUpdate: async (user) => {
+        if (user.changed('password')) {
+          user.password = await bcrypt.hash(user.password, 12);
+        }
+      },
+    },
+  }
+);
+
+module.exports = User;
