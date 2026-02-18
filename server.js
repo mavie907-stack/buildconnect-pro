@@ -10,6 +10,7 @@ const User = require('./models/User');
 const RFP = require('./models/RFP');
 const authRoutes = require('./routes/auth');
 const rfpRoutes = require('./routes/rfp');
+const adminRoutes = require('./routes/admin');
 
 // Set up model associations
 User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps' });
@@ -50,13 +51,14 @@ app.get('/health', (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({
-    message: 'BuildConnect Pro API',
+    message: 'BuildConnect Pro API 🚀',
     version: '1.0.0',
     status: 'running',
     endpoints: {
       health: '/health',
       auth: '/api/v1/auth',
       rfps: '/api/v1/rfps',
+      admin: '/api/v1/admin',
     },
   });
 });
@@ -64,6 +66,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/rfps', rfpRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // 404
 app.use((req, res) => {
@@ -88,10 +91,19 @@ async function startServer() {
     await sequelize.sync({ alter: true });
     console.log('✅ Database synchronized!');
 
+    // Auto-grant admin role to specific email
+    const adminEmail = 'info@unoliva.com';
+    const adminUser = await User.findOne({ where: { email: adminEmail } });
+    if (adminUser && adminUser.role !== 'admin') {
+      await adminUser.update({ role: 'admin' });
+      console.log(`👑 Admin role granted to ${adminEmail}`);
+    }
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
       console.log(`💚 Health: http://localhost:${PORT}/health`);
+      console.log(`👑 Admin: ${adminEmail}`);
     });
   } catch (error) {
     console.error('❌ Failed to start:', error);
