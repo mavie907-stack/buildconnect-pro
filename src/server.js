@@ -77,6 +77,8 @@ async function startServer() {
     
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+      console.log(`💚 Health: http://localhost:${PORT}/health`);
       console.log(`👑 Admin: ${adminEmail}`);
     });
   } catch (error) {
