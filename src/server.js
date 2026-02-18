@@ -68,7 +68,7 @@ async function startServer() {
     await sequelize.sync({ alter: true });
     console.log('✅ Database synchronized!');
     
-    const adminEmail = 'info@unoliva.com';
+    const adminEmail = 'ibrtoros@unoliva.com';
     const adminUser = await User.findOne({ where: { email: adminEmail } });
     if (adminUser && adminUser.role !== 'admin') {
       await adminUser.update({ role: 'admin' });
