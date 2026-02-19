@@ -11,6 +11,7 @@ const RFP = require('./models/RFP');
 const authRoutes = require('./routes/auth');
 const subscriptionRoutes = require('./routes/subscription');
 const adminRoutes = require('./routes/admin');
+const emailRoutes = require('./routes/email');
 
 User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps' });
 RFP.belongsTo(User, { foreignKey: 'client_id', as: 'client' });
@@ -48,6 +49,7 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/subscription', subscriptionRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/email', emailRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, error: { message: 'Route not found', statusCode: 404 } });
