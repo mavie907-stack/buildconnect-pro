@@ -266,6 +266,72 @@ const deleteProject = async (req, res) => {
   }
 };
 
+const globalSearch = async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json({ 
+        success: true, 
+        data: { users: [], projects: [] },
+        message: 'Query too short'
+      });
+    }
+
+    const { Op } = require('sequelize');
+    const User = require('../models/User');
+    const RFP = require('../models/RFP');
+
+    // Search users
+    const users = await User.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.iLike]: `%${q}%` } },
+          { email: { [Op.iLike]: `%${q}%` } },
+          { company: { [Op.iLike]: `%${q}%` } }
+        ]
+      },
+      limit: 10,
+      attributes: { exclude: ['password'] },
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Search projects
+    const projects = await RFP.findAll({
+      where: {
+        [Op.or]: [
+          { title: { [Op.iLike]: `%${q}%` } },
+          { description: { [Op.iLike]: `%${q}%` } }
+        ]
+      },
+      include: [{ 
+        model: User, 
+        as: 'client', 
+        attributes: ['id', 'name', 'email'] 
+      }],
+      limit: 10,
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: {
+        users,
+        projects,
+        totalResults: users.length + projects.length
+      },
+      query: q
+    });
+
+  } catch (error) {
+    console.error('Global search error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Search failed' }
+    });
+  }
+};
+
 module.exports = {
   getStats,
   getAllUsers,
@@ -275,4 +341,5 @@ module.exports = {
   getAllProjects,
   updateProjectStatus,
   deleteProject,
+  globalSearch,
 };
