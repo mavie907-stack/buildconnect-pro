@@ -15,18 +15,6 @@ class User extends Model {
 }
 
 User.init(
-  subscription_tier: {
-  type: DataTypes.ENUM('free', 'monthly', 'annual'),
-  defaultValue: 'free',
-},
-subscription_status: {
-  type: DataTypes.ENUM('active', 'cancelled', 'expired'),
-  defaultValue: 'active',
-},
-subscription_start: { type: DataTypes.DATE, allowNull: true },
-subscription_end: { type: DataTypes.DATE, allowNull: true },
-stripe_customer_id: { type: DataTypes.STRING, allowNull: true },
-stripe_subscription_id: { type: DataTypes.STRING, allowNull: true },
   {
     id: {
       type: DataTypes.UUID,
@@ -37,7 +25,6 @@ stripe_subscription_id: { type: DataTypes.STRING, allowNull: true },
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      validate: { isEmail: true },
     },
     password: {
       type: DataTypes.STRING,
@@ -51,12 +38,54 @@ stripe_subscription_id: { type: DataTypes.STRING, allowNull: true },
       type: DataTypes.ENUM('client', 'professional', 'admin'),
       defaultValue: 'professional',
     },
-    company: { type: DataTypes.STRING, allowNull: true },
-    location: { type: DataTypes.STRING, allowNull: true },
-    bio: { type: DataTypes.TEXT, allowNull: true },
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
-    is_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_login_at: { type: DataTypes.DATE, allowNull: true },
+    company: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    location: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    is_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    last_login_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    subscription_tier: {
+      type: DataTypes.ENUM('free', 'monthly', 'annual'),
+      defaultValue: 'free',
+    },
+    subscription_status: {
+      type: DataTypes.ENUM('active', 'cancelled', 'expired'),
+      defaultValue: 'active',
+    },
+    subscription_start: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    subscription_end: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    stripe_customer_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    stripe_subscription_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     sequelize,
