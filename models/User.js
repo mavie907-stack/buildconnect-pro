@@ -11,10 +11,13 @@ class User extends Model {
     const values = this.toJSON();
     delete values.password;
     return values;
-  } 
-User.init
-(
-subscription_tier: {
+  }
+}
+
+User.init(
+  {
+    id: {
+      subscription_tier: {
   type: DataTypes.ENUM('free', 'monthly', 'annual'),
   defaultValue: 'free',
 },
@@ -37,27 +40,7 @@ stripe_customer_id: {
 stripe_subscription_id: {
   type: DataTypes.STRING,
   allowNull: true,
-},   
-
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: { isEmail: true },
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
+},
     role: {
       type: DataTypes.ENUM('client', 'professional', 'admin'),
       defaultValue: 'professional',
@@ -69,30 +52,6 @@ stripe_subscription_id: {
     is_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
     last_login_at: { type: DataTypes.DATE, allowNull: true },
   },
-  subscription_tier: {
-      type: DataTypes.ENUM('free', 'monthly', 'annual'),
-      defaultValue: 'free',
-    },
-    subscription_status: {
-      type: DataTypes.ENUM('active', 'cancelled', 'expired'),
-      defaultValue: 'active',
-    },
-    subscription_start: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    subscription_end: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    stripe_customer_id: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    stripe_subscription_id: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
   {
     sequelize,
     tableName: 'users',
