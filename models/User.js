@@ -11,9 +11,9 @@ class User extends Model {
     const values = this.toJSON();
     delete values.password;
     return values;
-  }  
-  
-User.init(
+  } 
+User.init
+(
 subscription_tier: {
   type: DataTypes.ENUM('free', 'monthly', 'annual'),
   defaultValue: 'free',
