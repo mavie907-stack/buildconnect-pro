@@ -48,6 +48,7 @@ const canPostProject = async (req, res, next) => {
             tier: 'free',
             limit: 1,
             current: totalProjects
+            upgradeUrl: '/pricing'
           },
         });
       }
@@ -61,10 +62,26 @@ const canPostProject = async (req, res, next) => {
             tier: 'monthly',
             limit: 5,
             current: projectsThisMonth
+            upgradeUrl: '/pricing'
           },
         });
       }
-    }
+    } req.userStats = {
+      tier,
+      totalProjects,
+      projectsThisMonth,
+      limit: tier === 'free' ? 1 : tier === 'monthly' ? 5 : 'unlimited'
+    };
+
+    next();
+  } catch (error) {
+    console.error('Subscription check error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to check subscription limits' },
+    });
+  }
+};
 
     req.userStats = {
       tier,
