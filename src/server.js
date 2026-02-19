@@ -9,7 +9,7 @@ const sequelize = require('./config/database');
 const User = require('./models/User');
 const RFP = require('./models/RFP');
 const authRoutes = require('./routes/auth');
-const rfpRoutes = require('./routes/rfp');
+const subscriptionRoutes = require('./routes/subscription');
 const adminRoutes = require('./routes/admin');
 
 User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps' });
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/rfps', rfpRoutes);
+app.use('/api/v1/subscription', subscriptionRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 app.use((req, res) => {
