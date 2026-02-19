@@ -12,9 +12,7 @@ class User extends Model {
     delete values.password;
     return values;
   }
-}
-
-User.init(
+  User.init(
   {
     id: {
       subscription_tier: {
