@@ -50,4 +50,5 @@ const globalSearch = async (req, res) => {
     const User = require('../models/User');
     const RFP = require('../models/RFP');
     
-module.exports = router;
+    
+    module.exports = router;
