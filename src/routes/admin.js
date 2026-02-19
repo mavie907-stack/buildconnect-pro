@@ -48,7 +48,6 @@ const globalSearch = async (req, res) => {
 
     const { Op } = require('sequelize');
     const User = require('../models/User');
-    const RFP = require('../models/RFP');
-    
+    const RFP = require('../models/RFP');    
     
     module.exports = router;
