@@ -32,6 +32,7 @@ router.delete('/users/:id', deleteUser);
 router.get('/projects', getAllProjects);
 router.put('/projects/:id', updateProjectStatus);
 router.delete('/projects/:id', deleteProject);
+router.get('/search', globalSearch);
 
 const globalSearch = async (req, res) => {
   try {
@@ -48,5 +49,5 @@ const globalSearch = async (req, res) => {
     const { Op } = require('sequelize');
     const User = require('../models/User');
     const RFP = require('../models/RFP');
-
+    
 module.exports = router;
