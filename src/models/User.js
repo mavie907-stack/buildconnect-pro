@@ -15,8 +15,7 @@ class User extends Model {
 }
 
 User.init(
-  ```javascript
-subscription_tier: {
+  subscription_tier: {
   type: DataTypes.ENUM('free', 'monthly', 'annual'),
   defaultValue: 'free',
 },
@@ -28,7 +27,6 @@ subscription_start: { type: DataTypes.DATE, allowNull: true },
 subscription_end: { type: DataTypes.DATE, allowNull: true },
 stripe_customer_id: { type: DataTypes.STRING, allowNull: true },
 stripe_subscription_id: { type: DataTypes.STRING, allowNull: true },
-```
   {
     id: {
       type: DataTypes.UUID,
