@@ -11,8 +11,7 @@ class User extends Model {
     const values = this.toJSON();
     delete values.password;
     return values;
-  }
-  
+  }  
 User.init(
   {
     subscription_tier: {
