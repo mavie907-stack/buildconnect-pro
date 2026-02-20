@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const subscriptionRoutes = require('./routes/subscription');
 const adminRoutes = require('./routes/admin');
 const emailRoutes = require('./routes/email');
+const rfpRoutes = require('./routes/rfp');
 
 User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps' });
 RFP.belongsTo(User, { foreignKey: 'client_id', as: 'client' });
@@ -23,6 +24,7 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use('/api/v1/rfps', rfpRoutes);
 
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
