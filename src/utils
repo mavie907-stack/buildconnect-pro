@@ -1,0 +1,168 @@
+// SEO Meta Tags Generator
+
+const SEO_CONFIG = {
+  siteName: 'BuildConnect Pro',
+  defaultTitle: 'BuildConnect Pro - Architecture Marketplace Turkey',
+  defaultDescription: 'Turkey\'s premier marketplace connecting clients with architecture professionals. Post RFPs, browse portfolios, hire top architects for residential and commercial projects.',
+  defaultKeywords: 'architecture turkey, architect istanbul, architecture projects, RFP marketplace, building design, architect hire, villa design, commercial architecture',
+  twitterHandle: '@buildconnectpro',
+  ogImage: 'https://buildconnect-pro.com/og-image.jpg',
+  baseUrl: 'https://buildconnect-pro.com'
+};
+
+// Generate meta tags for home page
+function getHomeMetaTags() {
+  return `
+    <!-- Primary Meta Tags -->
+    <title>${SEO_CONFIG.defaultTitle}</title>
+    <meta name="title" content="${SEO_CONFIG.defaultTitle}">
+    <meta name="description" content="${SEO_CONFIG.defaultDescription}">
+    <meta name="keywords" content="${SEO_CONFIG.defaultKeywords}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="${SEO_CONFIG.baseUrl}/">
+    <meta property="og:title" content="${SEO_CONFIG.defaultTitle}">
+    <meta property="og:description" content="${SEO_CONFIG.defaultDescription}">
+    <meta property="og:image" content="${SEO_CONFIG.ogImage}">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="${SEO_CONFIG.baseUrl}/">
+    <meta property="twitter:title" content="${SEO_CONFIG.defaultTitle}">
+    <meta property="twitter:description" content="${SEO_CONFIG.defaultDescription}">
+    <meta property="twitter:image" content="${SEO_CONFIG.ogImage}">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "${SEO_CONFIG.siteName}",
+      "url": "${SEO_CONFIG.baseUrl}",
+      "description": "${SEO_CONFIG.defaultDescription}",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "${SEO_CONFIG.baseUrl}/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+  `;
+}
+
+// Generate meta tags for project page
+function getProjectMetaTags(project) {
+  const title = `${project.title} - Architecture Project | BuildConnect Pro`;
+  const description = project.description.substring(0, 155) + '...';
+  const url = `${SEO_CONFIG.baseUrl}/projects/${createSlug(project.title, project.id)}`;
+  const keywords = `${project.project_type}, architecture project, ${project.location?.city || 'turkey'}, building design`;
+  
+  return `
+    <!-- Primary Meta Tags -->
+    <title>${title}</title>
+    <meta name="title" content="${title}">
+    <meta name="description" content="${description}">
+    <meta name="keywords" content="${keywords}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="${url}">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${project.images?.[0] || SEO_CONFIG.ogImage}">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="${url}">
+    <meta property="twitter:title" content="${title}">
+    <meta property="twitter:description" content="${description}">
+    <meta property="twitter:image" content="${project.images?.[0] || SEO_CONFIG.ogImage}">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "name": "${project.title}",
+      "description": "${description}",
+      "serviceType": "Architecture Design",
+      "provider": {
+        "@type": "Person",
+        "name": "${project.client?.name || 'BuildConnect User'}"
+      },
+      "areaServed": "${project.location?.city || 'Turkey'}",
+      "offers": {
+        "@type": "Offer",
+        "price": "${project.budget_min || 0}",
+        "priceCurrency": "${project.currency || 'USD'}"
+      }
+    }
+    </script>
+  `;
+}
+
+// Generate meta tags for architect profile
+function getArchitectMetaTags(user) {
+  const title = `${user.name} - Architecture Professional | BuildConnect Pro`;
+  const description = user.bio ? user.bio.substring(0, 155) + '...' : 
+    `View ${user.name}'s architecture portfolio and projects on BuildConnect Pro. ${user.company || ''} ${user.location || ''}`;
+  const url = `${SEO_CONFIG.baseUrl}/architects/${createSlug(user.name, user.id)}`;
+  
+  return `
+    <!-- Primary Meta Tags -->
+    <title>${title}</title>
+    <meta name="title" content="${title}">
+    <meta name="description" content="${description}">
+    <meta name="keywords" content="architect ${user.location}, architecture professional, ${user.company}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="profile">
+    <meta property="og:url" content="${url}">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${user.avatar || SEO_CONFIG.ogImage}">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:url" content="${url}">
+    <meta property="twitter:title" content="${title}">
+    <meta property="twitter:description" content="${description}">
+    <meta property="twitter:image" content="${user.avatar || SEO_CONFIG.ogImage}">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "${user.name}",
+      "jobTitle": "Architecture Professional",
+      "worksFor": {
+        "@type": "Organization",
+        "name": "${user.company || SEO_CONFIG.siteName}"
+      },
+      "url": "${url}",
+      "description": "${description}"
+    }
+    </script>
+  `;
+}
+
+// Helper function
+function createSlug(title, id) {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 50);
+  
+  return `${slug}-${id.substring(0, 8)}`;
+}
+
+module.exports = {
+  SEO_CONFIG,
+  getHomeMetaTags,
+  getProjectMetaTags,
+  getArchitectMetaTags,
+  createSlug
+};
