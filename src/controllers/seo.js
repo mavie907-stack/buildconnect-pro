@@ -82,4 +82,5 @@ function createSlug(title, id) {
   return `${slug}-${id.substring(0, 8)}`;
 }
 
-module.exports = { generateSitemap, createSlug };
+module.exports = { generateSitemap, createSlug }
+
