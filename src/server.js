@@ -54,6 +54,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/subscription', subscriptionRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/email', emailRoutes);
+app.use('/api/v1/public', publicRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, error: { message: 'Route not found', statusCode: 404 } });
