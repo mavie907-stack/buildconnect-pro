@@ -11,6 +11,7 @@ const RFP = require('./models/RFP');
 const authRoutes = require('./routes/auth');
 const rfpRoutes = require('./routes/rfp');
 const adminRoutes = require('./routes/admin');
+const ext = require('./routes/extension'); app.use('/api/v1', ext);
 
 // Set up model associations
 User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps' });
