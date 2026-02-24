@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const rfpRoutes = require('./routes/rfp');
 const adminRoutes = require('./routes/admin');
 const ext = require('./routes/extension'); app.use('/api/v1', ext);
+const ext = require('./routes/extension');
 
 // Set up model associations
 User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps' });
@@ -68,6 +69,7 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/rfps', rfpRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1', ext);
 
 // 404
 app.use((req, res) => {
