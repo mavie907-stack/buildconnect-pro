@@ -632,6 +632,40 @@ router.get('/members', protect, wrap(async (req, res) => {
 //  ADMIN — SUBSCRIPTION, BAN, STATS
 // ═══════════════════════════════════════════════════════════════════
 
+// ── Admin: list all users ─────────────────────────────────────────
+router.get('/admin/users', protect, adminOnly, wrap(async (req, res) => {
+  try {
+    const users = (await User.findAll({ order: [['createdAt','DESC']] })).map(u => u.toPublicJSON());
+    ok(res, { users, total: users.length });
+  } catch(e) { fail(res, e.message); }
+}));
+
+// ── Admin: delete a user ──────────────────────────────────────────
+router.delete('/admin/users/:id', protect, adminOnly, wrap(async (req, res) => {
+  try {
+    await User.destroy({ where: { id: req.params.id } });
+    ok(res, {}, 'User deleted');
+  } catch(e) { fail(res, e.message); }
+}));
+
+// ── Admin: update any user field (name, role, company, is_active, etc.) ──
+router.put('/admin/users/:id', protect, adminOnly, wrap(async (req, res) => {
+  const allowed = ['name','role','company','location','bio','is_active','is_verified'];
+  const updates = {};
+  allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+  if (!Object.keys(updates).length) return fail(res, 'No valid fields to update');
+  try {
+    await User.update(updates, { where: { id: req.params.id } });
+    const updated = await User.findByPk(req.params.id);
+    // Notify user if role changed
+    if (updates.role) {
+      await pushNotif(req.params.id, 'system',
+        `Your account role has been updated to: ${updates.role}`, '');
+    }
+    ok(res, { user: updated ? updated.toPublicJSON() : { id: req.params.id } }, 'User updated');
+  } catch(e) { fail(res, e.message); }
+}));
+
 router.put('/admin/users/:id/subscription', protect, adminOnly, wrap(async (req, res) => {
   const { tier, status = 'active', end_date, note } = req.body;
   const userId = req.params.id;
