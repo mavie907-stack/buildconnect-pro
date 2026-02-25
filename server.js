@@ -11,7 +11,6 @@ const RFP = require('./models/RFP');
 const authRoutes = require('./routes/auth');
 const rfpRoutes = require('./routes/rfp');
 const adminRoutes = require('./routes/admin');
-const ext = require('./routes/extension'); app.use('/api/v1', ext);
 const ext = require('./routes/extension');
 
 // Set up model associations
