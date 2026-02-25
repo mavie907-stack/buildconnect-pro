@@ -31,23 +31,37 @@ try { Message      = require('../models/Message');      } catch(e) {}
 try { Notification = require('../models/Notification'); } catch(e) {}
 try { Proposal     = require('../models/Proposal');     } catch(e) {}
 
-// ─── Optional multer for image uploads ────────────────────────────
-let upload = null;
+// ─── Cloudinary image uploads ─────────────────────────────────────
+let cloudinary = null;
+let multer     = null;
+let upload     = null;
 try {
-  const multer  = require('multer');
-  const path    = require('path');
-  const fs      = require('fs');
-  const dest    = path.join(process.cwd(), 'uploads');
-  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-  upload = multer({
-    storage : multer.diskStorage({
-      destination : (req, file, cb) => cb(null, dest),
-      filename    : (req, file, cb) => cb(null, Date.now() + '_' + file.originalname.replace(/\s/g, '_')),
-    }),
-    limits : { fileSize: 8 * 1024 * 1024 }, // 8 MB
+  cloudinary = require('cloudinary').v2;
+  cloudinary.config({
+    cloud_name : process.env.CLOUDINARY_CLOUD_NAME || 'dgxk9xgmh',
+    api_key    : process.env.CLOUDINARY_API_KEY    || '152912546379282',
+    api_secret : process.env.CLOUDINARY_API_SECRET || 'Nvnb7AhYoHsI2ZK0N7Fbcg1oODU',
   });
+  // Use multer memoryStorage — files go to Cloudinary, not disk
+  multer = require('multer');
+  upload = multer({
+    storage : multer.memoryStorage(),
+    limits  : { fileSize: 8 * 1024 * 1024 }, // 8 MB
+  });
+  console.log('[ext] Cloudinary image uploads ready ✅');
 } catch(e) {
-  console.warn('[ext] multer not installed — image uploads disabled. Run: npm install multer');
+  console.warn('[ext] Cloudinary/multer not installed. Run: npm install cloudinary multer');
+}
+
+// Helper: upload a single buffer to Cloudinary
+function uploadToCloudinary(buffer, mimetype, folder = 'buildconnect') {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: 'auto' },
+      (err, result) => err ? reject(err) : resolve(result)
+    );
+    stream.end(buffer);
+  });
 }
 
 // ─── Response helpers ──────────────────────────────────────────────
@@ -335,22 +349,35 @@ router.post('/admin/broadcast', protect, adminOnly, wrap(async (req, res) => {
 //  NOTE: /posts/upload MUST be registered before /posts/:id
 // ═══════════════════════════════════════════════════════════════════
 
-// ── Media upload ──────────────────────────────────────────────────
+// ── Media upload → Cloudinary ─────────────────────────────────────
 router.post('/posts/upload', protect, (req, res, next) => {
-  if (!upload) return ok(res, { files: [] }, 'Image uploads disabled — run: npm install multer');
+  if (!upload) return ok(res, { files: [] }, 'Image uploads disabled — run: npm install cloudinary multer');
   upload.array('files', 10)(req, res, err => {
     if (err) return fail(res, err.message || 'Upload error', 400);
     next();
   });
 }, wrap(async (req, res) => {
-  const files  = req.files || [];
+  const files = req.files || [];
   if (!files.length) return ok(res, { files: [] }, 'No files received');
-  const result = files.map(f => ({
-    type : f.mimetype.startsWith('image/') ? 'image' : 'file',
-    url  : `/uploads/${f.filename}`,
-    name : f.originalname,
+
+  // Upload each file to Cloudinary
+  const result = await Promise.all(files.map(async f => {
+    try {
+      const cld = await uploadToCloudinary(f.buffer, f.mimetype);
+      return {
+        type   : f.mimetype.startsWith('image/') ? 'image' : 'file',
+        url    : cld.secure_url,   // permanent Cloudinary HTTPS URL
+        name   : f.originalname,
+        public_id : cld.public_id,
+      };
+    } catch(e) {
+      console.error('[ext] Cloudinary upload error:', e.message);
+      return null;
+    }
   }));
-  ok(res, { files: result }, `${result.length} file(s) uploaded`);
+
+  const uploaded = result.filter(Boolean);
+  ok(res, { files: uploaded }, `${uploaded.length} file(s) uploaded`);
 }));
 
 // ── GET paginated feed ────────────────────────────────────────────
