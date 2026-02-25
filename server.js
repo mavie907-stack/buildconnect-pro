@@ -65,10 +65,10 @@ app.get('/', (req, res) => {
 });
 
 // Routes
+app.use('/api/v1', ext);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/rfps', rfpRoutes);
 app.use('/api/v1/admin', adminRoutes);
-app.use('/api/v1', ext);
 
 // 404
 app.use((req, res) => {
