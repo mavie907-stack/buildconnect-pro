@@ -6,9 +6,12 @@ const path    = require('path');
 const fs      = require('fs');
 
 const sequelize = require('./config/database');
-const User      = require('./models/User');
-const RFP       = require('./models/RFP');
-const Post      = require('./models/Post');
+const User         = require('./models/User');
+const RFP          = require('./models/RFP');
+const Post         = require('./models/Post');
+const Message      = require('./models/Message');
+const Notification = require('./models/Notification');
+const Proposal     = require('./models/Proposal');
 
 // ── Route files ────────────────────────────────────────────────────
 const ext               = require('./routes/extension');        // ← NEW
@@ -22,22 +25,41 @@ const publicRoutes      = require('./routes/public');
 // ── Associations ───────────────────────────────────────────────────
 User.hasMany(RFP,  { foreignKey: 'client_id',  as: 'rfps'   });
 RFP.belongsTo(User,  { foreignKey: 'client_id',  as: 'client' });
-User.hasMany(Post, { foreignKey: 'author_id', as: 'posts'  });
-Post.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
+User.hasMany(Post,     { foreignKey: 'author_id',      as: 'posts'         });
+Post.belongsTo(User,     { foreignKey: 'author_id',      as: 'author'        });
+User.hasMany(Message,  { foreignKey: 'sender_id',      as: 'sentMessages'  });
+User.hasMany(Message,  { foreignKey: 'receiver_id',    as: 'recvMessages'  });
+Message.belongsTo(User,  { foreignKey: 'sender_id',      as: 'sender'        });
+Message.belongsTo(User,  { foreignKey: 'receiver_id',    as: 'receiver'      });
+User.hasMany(Notification,{ foreignKey: 'user_id',       as: 'notifications' });
+RFP.hasMany(Proposal,  { foreignKey: 'rfp_id',         as: 'proposals'     });
+Proposal.belongsTo(RFP,  { foreignKey: 'rfp_id',         as: 'rfp'           });
+User.hasMany(Proposal, { foreignKey: 'professional_id', as: 'proposals'    });
+Proposal.belongsTo(User, { foreignKey: 'professional_id', as: 'professional' });
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
 // ── Middleware ─────────────────────────────────────────────────────
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
+// Helmet with COEP/CORP disabled so uploaded images load cross-origin
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy:   false,
+}));
+app.use(cors({ origin: '*', credentials: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Static uploads folder ──────────────────────────────────────────
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
+// Serve uploads with headers that allow cross-origin image loading
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static(uploadsDir));
 
 // ── Health / root ──────────────────────────────────────────────────
 app.get('/health', (req, res) => {
