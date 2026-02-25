@@ -8,6 +8,7 @@ const fs      = require('fs');
 const sequelize = require('./config/database');
 const User      = require('./models/User');
 const RFP       = require('./models/RFP');
+const Post      = require('./models/Post');
 
 // ── Route files ────────────────────────────────────────────────────
 const ext               = require('./routes/extension');        // ← NEW
@@ -19,22 +20,34 @@ const rfpRoutes         = require('./routes/rfp');
 const publicRoutes      = require('./routes/public');
 
 // ── Associations ───────────────────────────────────────────────────
-User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps' });
-RFP.belongsTo(User, { foreignKey: 'client_id', as: 'client' });
+User.hasMany(RFP,  { foreignKey: 'client_id',  as: 'rfps'   });
+RFP.belongsTo(User,  { foreignKey: 'client_id',  as: 'client' });
+User.hasMany(Post, { foreignKey: 'author_id', as: 'posts'  });
+Post.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
 // ── Middleware ─────────────────────────────────────────────────────
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
+// Helmet with COEP/CORP disabled so uploaded images load cross-origin
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy:   false,
+}));
+app.use(cors({ origin: '*', credentials: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Static uploads folder ──────────────────────────────────────────
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
+// Serve uploads with headers that allow cross-origin image loading
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static(uploadsDir));
 
 // ── Health / root ──────────────────────────────────────────────────
 app.get('/health', (req, res) => {
