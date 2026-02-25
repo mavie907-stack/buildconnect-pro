@@ -1,0 +1,694 @@
+/**
+ * BuildConnect Pro — src/routes/extension.js
+ * ============================================
+ * Handles all dashboard routes: posts, rfps, messages,
+ * notifications, online presence, members, profile update,
+ * media upload, and admin actions.
+ *
+ * Save this file as:  src/routes/extension.js
+ */
+
+'use strict';
+
+const express    = require('express');
+const router     = express.Router();
+const { Op }     = require('sequelize');
+const sequelize  = require('../config/database');
+
+// ─── Auth middleware (matches this project's exports) ──────────────
+const { authenticate, authorize } = require('../middleware/auth');
+const protect    = authenticate;
+const adminOnly  = authorize('admin');
+
+// ─── Core models ───────────────────────────────────────────────────
+const User = require('../models/User');
+const RFP  = require('../models/RFP');
+
+// ─── Optional models (created automatically if missing) ────────────
+let Post, Message, Notification, Proposal;
+try { Post         = require('../models/Post');         } catch(e) {}
+try { Message      = require('../models/Message');      } catch(e) {}
+try { Notification = require('../models/Notification'); } catch(e) {}
+try { Proposal     = require('../models/Proposal');     } catch(e) {}
+
+// ─── Optional multer for image uploads ────────────────────────────
+let upload = null;
+try {
+  const multer  = require('multer');
+  const path    = require('path');
+  const fs      = require('fs');
+  const dest    = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  upload = multer({
+    storage : multer.diskStorage({
+      destination : (req, file, cb) => cb(null, dest),
+      filename    : (req, file, cb) => cb(null, Date.now() + '_' + file.originalname.replace(/\s/g, '_')),
+    }),
+    limits : { fileSize: 8 * 1024 * 1024 }, // 8 MB
+  });
+} catch(e) {
+  console.warn('[ext] multer not installed — image uploads disabled. Run: npm install multer');
+}
+
+// ─── Response helpers ──────────────────────────────────────────────
+const ok   = (res, data = {}, msg = 'Success') =>
+  res.json({ status: 'success', message: msg, data });
+const fail = (res, msg = 'Error', code = 400) =>
+  res.status(code).json({ status: 'error', error: { message: msg } });
+const wrap = fn => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+const uid  = req => req.user?.id || req.userId || '';
+
+// ─── In-memory fallbacks (used when optional models don't exist) ───
+const mem = {
+  posts         : [],
+  messages      : [],
+  notifications : [],
+  proposals     : [],
+  online        : new Map(),
+};
+let _pid=1, _mid=1, _nid=1, _boid=1;
+
+// ─── Helper: safe user lookup ──────────────────────────────────────
+async function getUser(id) {
+  if (!id) return null;
+  try { return (await User.findByPk(id))?.toJSON() || null; } catch(e) { return null; }
+}
+async function getAllUsers() {
+  try { return (await User.findAll({ where: { is_active: true } })).map(u => u.toJSON()); }
+  catch(e) { return []; }
+}
+
+// ─── Helper: push a notification ──────────────────────────────────
+async function pushNotif(userId, type, title, body = '') {
+  const data = { id: String(_nid++), user_id: String(userId), type, title, body, is_read: false, createdAt: new Date() };
+  if (Notification) {
+    try { await Notification.create(data); return; } catch(e) {}
+  }
+  mem.notifications.unshift(data);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ONLINE PRESENCE
+// ═══════════════════════════════════════════════════════════════════
+
+router.post('/online/heartbeat', protect, wrap(async (req, res) => {
+  const id = String(uid(req));
+  if (id) mem.online.set(id, Date.now());
+  ok(res, { ok: true });
+}));
+
+router.get('/online/count', protect, wrap(async (req, res) => {
+  const cut = Date.now() - 120000;
+  for (const [k, t] of mem.online) { if (t < cut) mem.online.delete(k); }
+  ok(res, { count: mem.online.size });
+}));
+
+router.get('/admin/online', protect, adminOnly, wrap(async (req, res) => {
+  const cut = Date.now() - 120000;
+  const sessions = [];
+  for (const [userId, ts] of mem.online) {
+    if (ts < cut) { mem.online.delete(userId); continue; }
+    const u = await getUser(userId);
+    sessions.push({ user_id: userId, last_seen: new Date(ts),
+      user: u ? { id: userId, name: u.name, role: u.role } : { id: userId } });
+  }
+  ok(res, { sessions, count: sessions.length });
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+//  PROFILE UPDATE
+//  Dashboard calls PUT /auth/updateMe (falls back to PUT /auth/me)
+// ═══════════════════════════════════════════════════════════════════
+
+async function handleProfileUpdate(req, res) {
+  const userId = uid(req);
+  const { name, company, location, bio } = req.body;
+  const updates = {};
+  if (name     !== undefined) updates.name     = name;
+  if (company  !== undefined) updates.company  = company;
+  if (location !== undefined) updates.location = location;
+  if (bio      !== undefined) updates.bio      = bio;
+
+  try {
+    await User.update(updates, { where: { id: userId } });
+    const updated = await User.findByPk(userId);
+    ok(res, { user: updated ? updated.toPublicJSON() : { id: userId, ...updates } }, 'Profile updated');
+  } catch(e) {
+    fail(res, e.message || 'Update failed');
+  }
+}
+
+router.put('/auth/updateMe', protect, wrap(handleProfileUpdate));
+router.put('/auth/me',       protect, wrap(handleProfileUpdate));
+router.patch('/auth/me',     protect, wrap(handleProfileUpdate));
+
+// ═══════════════════════════════════════════════════════════════════
+//  NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════
+
+router.get('/notifications', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  let notifs = [];
+  if (Notification) {
+    try {
+      notifs = (await Notification.findAll({
+        where: { user_id: userId },
+        order: [['createdAt', 'DESC']],
+        limit: 50,
+      })).map(n => n.toJSON());
+    } catch(e) { notifs = mem.notifications.filter(n => n.user_id === userId); }
+  } else {
+    notifs = mem.notifications.filter(n => n.user_id === userId);
+  }
+  ok(res, { notifications: notifs, unread: notifs.filter(n => !n.is_read).length });
+}));
+
+router.put('/notifications/read-all', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  if (Notification) {
+    try { await Notification.update({ is_read: true }, { where: { user_id: userId } }); }
+    catch(e) {}
+  }
+  mem.notifications.filter(n => n.user_id === userId).forEach(n => { n.is_read = true; });
+  ok(res, {}, 'All read');
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+//  MESSAGES
+// ═══════════════════════════════════════════════════════════════════
+
+router.post('/messages', protect, wrap(async (req, res) => {
+  const { receiver_id, subject = '', body } = req.body;
+  const sender_id = String(uid(req));
+  if (!receiver_id || !body) return fail(res, 'receiver_id and body are required');
+
+  const data = { sender_id, receiver_id, subject, body, is_read: false, createdAt: new Date() };
+  let msg = null;
+  if (Message) {
+    try { msg = (await Message.create(data)).toJSON(); } catch(e) {}
+  }
+  if (!msg) {
+    const sender   = await getUser(sender_id)   || { id: sender_id,   name: req.user?.name || '', role: '' };
+    const receiver = await getUser(receiver_id) || { id: receiver_id, name: 'Member', role: '' };
+    msg = { ...data, id: String(_mid++), sender, receiver };
+    mem.messages.unshift(msg);
+  }
+  await pushNotif(receiver_id, 'message',
+    `New message from ${req.user?.name || 'a member'}`, subject || String(body).slice(0, 80));
+  ok(res, { message: msg }, 'Message sent');
+}));
+
+router.get('/messages/inbox', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  let msgs = [];
+  if (Message) {
+    try {
+      msgs = (await Message.findAll({
+        where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] },
+        order: [['createdAt', 'DESC']],
+        limit: 200,
+        include: [
+          { model: User, as: 'sender',   attributes: ['id','name','email','role'], required: false },
+          { model: User, as: 'receiver', attributes: ['id','name','email','role'], required: false },
+        ],
+      })).map(m => m.toJSON());
+    } catch(e) { msgs = mem.messages.filter(m => m.sender_id === userId || m.receiver_id === userId); }
+  } else {
+    msgs = mem.messages.filter(m => m.sender_id === userId || m.receiver_id === userId);
+  }
+  ok(res, { messages: msgs });
+}));
+
+router.get('/messages', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  let msgs = [];
+  if (Message) {
+    try {
+      msgs = (await Message.findAll({
+        where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] },
+        order: [['createdAt', 'DESC']],
+        limit: 200,
+        include: [
+          { model: User, as: 'sender',   attributes: ['id','name','email','role'], required: false },
+          { model: User, as: 'receiver', attributes: ['id','name','email','role'], required: false },
+        ],
+      })).map(m => m.toJSON());
+    } catch(e) { msgs = mem.messages.filter(m => m.sender_id === userId || m.receiver_id === userId); }
+  } else {
+    msgs = mem.messages.filter(m => m.sender_id === userId || m.receiver_id === userId);
+  }
+  ok(res, { messages: msgs });
+}));
+
+router.put('/messages/:id/read', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  if (Message) {
+    try { await Message.update({ is_read: true }, { where: { id: req.params.id, receiver_id: userId } }); }
+    catch(e) {}
+  }
+  const m = mem.messages.find(m => m.id === req.params.id);
+  if (m) m.is_read = true;
+  ok(res, {}, 'Read');
+}));
+
+router.delete('/messages/:id', protect, wrap(async (req, res) => {
+  if (Message) {
+    try { await Message.destroy({ where: { id: req.params.id } }); } catch(e) {}
+  }
+  mem.messages = mem.messages.filter(m => m.id !== req.params.id);
+  ok(res, {}, 'Deleted');
+}));
+
+// ─── Admin messages ────────────────────────────────────────────────
+
+router.get('/admin/messages', protect, adminOnly, wrap(async (req, res) => {
+  let msgs = [];
+  if (Message) {
+    try {
+      msgs = (await Message.findAll({
+        order: [['createdAt', 'DESC']], limit: 200,
+        include: [
+          { model: User, as: 'sender',   attributes: ['id','name','email','role'], required: false },
+          { model: User, as: 'receiver', attributes: ['id','name','email','role'], required: false },
+        ],
+      })).map(m => m.toJSON());
+    } catch(e) { msgs = [...mem.messages]; }
+  } else { msgs = [...mem.messages]; }
+  ok(res, { messages: msgs });
+}));
+
+router.post('/admin/messages', protect, adminOnly, wrap(async (req, res) => {
+  const { receiver_id, subject = '', body } = req.body;
+  const sender_id = String(uid(req));
+  if (!receiver_id || !body) return fail(res, 'receiver_id and body are required');
+  const data = { sender_id, receiver_id, subject, body, is_read: false, createdAt: new Date() };
+  let msg = null;
+  if (Message) { try { msg = (await Message.create(data)).toJSON(); } catch(e) {} }
+  if (!msg) {
+    const r = await getUser(receiver_id) || { id: receiver_id, name: 'Member', email: '', role: '' };
+    msg = { ...data, id: String(_mid++),
+      sender:   { id: sender_id,   name: req.user?.name || 'Admin', role: 'admin' },
+      receiver: { id: receiver_id, name: r.name, email: r.email || '', role: r.role || '' },
+    };
+    mem.messages.unshift(msg);
+  }
+  await pushNotif(receiver_id, 'message',
+    `Message from Admin${subject ? ': ' + subject : ''}`, String(body).slice(0, 100));
+  ok(res, { message: msg }, 'Message sent');
+}));
+
+router.delete('/admin/messages/:id', protect, adminOnly, wrap(async (req, res) => {
+  if (Message) { try { await Message.destroy({ where: { id: req.params.id } }); } catch(e) {} }
+  mem.messages = mem.messages.filter(m => m.id !== req.params.id);
+  ok(res, {}, 'Deleted');
+}));
+
+// ─── Broadcast ────────────────────────────────────────────────────
+
+router.post('/admin/broadcast', protect, adminOnly, wrap(async (req, res) => {
+  const { title, body = '', type = 'info' } = req.body;
+  if (!title) return fail(res, 'title is required');
+  const sender_id = String(uid(req));
+  const users     = await getAllUsers();
+  let sent        = 0;
+  for (const u of users) {
+    const receiverId = String(u.id);
+    await pushNotif(receiverId, 'system', title, body);
+    const data = { sender_id, receiver_id: receiverId,
+      subject: `[Broadcast] ${title}`, body: body || title, is_read: false, createdAt: new Date() };
+    let saved = false;
+    if (Message) { try { await Message.create(data); saved = true; } catch(e) {} }
+    if (!saved) {
+      mem.messages.unshift({ ...data, id: String(_mid++),
+        sender:   { id: sender_id,   name: req.user?.name || 'Admin', role: 'admin' },
+        receiver: { id: receiverId,  name: u.name || 'Member' },
+      });
+    }
+    sent++;
+  }
+  ok(res, { sent }, `Broadcast sent to ${sent} members`);
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+//  POSTS  (community feed)
+//  NOTE: /posts/upload MUST be registered before /posts/:id
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Media upload ──────────────────────────────────────────────────
+router.post('/posts/upload', protect, (req, res, next) => {
+  if (!upload) return ok(res, { files: [] }, 'Image uploads disabled — run: npm install multer');
+  upload.array('files', 10)(req, res, err => {
+    if (err) return fail(res, err.message || 'Upload error', 400);
+    next();
+  });
+}, wrap(async (req, res) => {
+  const files  = req.files || [];
+  if (!files.length) return ok(res, { files: [] }, 'No files received');
+  const result = files.map(f => ({
+    type : f.mimetype.startsWith('image/') ? 'image' : 'file',
+    url  : `/uploads/${f.filename}`,
+    name : f.originalname,
+  }));
+  ok(res, { files: result }, `${result.length} file(s) uploaded`);
+}));
+
+// ── GET paginated feed ────────────────────────────────────────────
+router.get('/posts', protect, wrap(async (req, res) => {
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.min(50, parseInt(req.query.limit) || 10);
+  const offset = (page - 1) * limit;
+  let posts = [];
+  if (Post) {
+    try {
+      posts = (await Post.findAll({
+        order   : [['createdAt', 'DESC']],
+        limit, offset,
+        include : [{ model: User, as: 'author', attributes: ['id','name','email','role','company','subscription_tier'], required: false }],
+      })).map(p => p.toJSON());
+    } catch(e) { posts = mem.posts.slice(offset, offset + limit); }
+  } else { posts = mem.posts.slice(offset, offset + limit); }
+  ok(res, { posts, page, limit });
+}));
+
+// ── CREATE post ───────────────────────────────────────────────────
+router.post('/posts', protect, wrap(async (req, res) => {
+  const author_id = String(uid(req));
+  const { body, rfp_id, media } = req.body;
+  if (!body) return fail(res, 'body is required');
+  const data = { author_id, body, rfp_id: rfp_id || null,
+    media: media || [], likes: [], comments: [], is_pinned: false, createdAt: new Date() };
+  let post = null;
+  if (Post) {
+    try { post = (await Post.create(data)).toJSON(); } catch(e) {}
+  }
+  if (!post) {
+    post = { ...data, id: String(_pid++) };
+    mem.posts.unshift(post);
+  }
+  const author = await getUser(author_id);
+  if (author) post.author = { id: author_id, name: author.name, email: author.email, role: author.role, company: author.company || '', subscription_tier: author.subscription_tier || 'free' };
+  ok(res, { post }, 'Post created');
+}));
+
+// ── LIKE / unlike ─────────────────────────────────────────────────
+router.post('/posts/:id/like', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  let post = null;
+  if (Post) { try { post = (await Post.findByPk(req.params.id))?.toJSON() || null; } catch(e) {} }
+  if (!post) post = mem.posts.find(p => p.id === req.params.id);
+  if (!post) return fail(res, 'Post not found', 404);
+  const likes    = (Array.isArray(post.likes) ? post.likes : []).map(String);
+  const liked    = likes.includes(userId);
+  const newLikes = liked ? likes.filter(id => id !== userId) : [...likes, userId];
+  if (Post) { try { await Post.update({ likes: newLikes }, { where: { id: req.params.id } }); } catch(e) {} }
+  const mp = mem.posts.find(p => p.id === req.params.id);
+  if (mp) mp.likes = newLikes;
+  ok(res, { liked: !liked, likes: newLikes });
+}));
+
+// ── ADD comment ───────────────────────────────────────────────────
+router.post('/posts/:id/comments', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  const { body } = req.body;
+  if (!body) return fail(res, 'body is required');
+  const author  = await getUser(userId) || { id: userId, name: req.user?.name || 'Member', role: req.user?.role || '' };
+  const comment = { id: String(Date.now()), author: { id: userId, name: author.name, role: author.role }, body, createdAt: new Date() };
+  if (Post) {
+    try {
+      const p = await Post.findByPk(req.params.id);
+      if (p) {
+        const comments = [...(p.comments || []), comment];
+        await Post.update({ comments }, { where: { id: req.params.id } });
+      }
+    } catch(e) {}
+  }
+  const mp = mem.posts.find(p => p.id === req.params.id);
+  if (mp) mp.comments = [...(mp.comments || []), comment];
+  ok(res, { comment }, 'Comment added');
+}));
+
+// ── DELETE post ───────────────────────────────────────────────────
+router.delete('/posts/:id', protect, wrap(async (req, res) => {
+  const userId = String(uid(req));
+  let post = null;
+  if (Post) { try { post = (await Post.findByPk(req.params.id))?.toJSON() || null; } catch(e) {} }
+  if (!post) post = mem.posts.find(p => p.id === req.params.id);
+  if (!post) return fail(res, 'Post not found', 404);
+  if (String(post.author_id) !== userId && req.user?.role !== 'admin')
+    return fail(res, 'Not authorised', 403);
+  if (Post) { try { await Post.destroy({ where: { id: req.params.id } }); } catch(e) {} }
+  mem.posts = mem.posts.filter(p => p.id !== req.params.id);
+  ok(res, {}, 'Post deleted');
+}));
+
+// ── Admin posts ───────────────────────────────────────────────────
+router.get('/admin/posts', protect, adminOnly, wrap(async (req, res) => {
+  let posts = [];
+  if (Post) {
+    try {
+      posts = (await Post.findAll({
+        order: [['createdAt', 'DESC']], limit: 100,
+        include: [{ model: User, as: 'author', attributes: ['id','name','role'], required: false }],
+      })).map(p => p.toJSON());
+    } catch(e) { posts = [...mem.posts]; }
+  } else { posts = [...mem.posts]; }
+  ok(res, { posts });
+}));
+
+router.put('/admin/posts/:id', protect, adminOnly, wrap(async (req, res) => {
+  if (Post) { try { await Post.update(req.body, { where: { id: req.params.id } }); } catch(e) { return fail(res, e.message); } }
+  const mp = mem.posts.find(p => p.id === req.params.id);
+  if (mp) Object.assign(mp, req.body);
+  ok(res, {}, 'Updated');
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+//  RFPs
+//  ⚠️  /rfps/my  MUST come before  /rfps/:id  (Express route order)
+// ═══════════════════════════════════════════════════════════════════
+
+// ── GET all open RFPs (professionals browsing) ────────────────────
+router.get('/rfps', protect, wrap(async (req, res) => {
+  const page   = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit  = Math.min(50, parseInt(req.query.limit) || 20);
+  const offset = (page - 1) * limit;
+  try {
+    const rfps = (await RFP.findAll({
+      where   : { status: 'open' },
+      order   : [['createdAt', 'DESC']],
+      limit, offset,
+      include : [{ model: User, as: 'client', attributes: ['id','name','company','role'], required: false }],
+    })).map(r => r.toJSON());
+    ok(res, { rfps, page, limit });
+  } catch(e) { fail(res, e.message); }
+}));
+
+// ── GET my RFPs (clients) — MUST be before /:id ───────────────────
+router.get('/rfps/my', protect, wrap(async (req, res) => {
+  const userId = uid(req);
+  try {
+    const rfps = (await RFP.findAll({
+      where : { client_id: userId },
+      order : [['createdAt', 'DESC']],
+      include: [{ model: User, as: 'client', attributes: ['id','name','company'], required: false }],
+    })).map(r => r.toJSON());
+    ok(res, { rfps });
+  } catch(e) { fail(res, e.message); }
+}));
+
+// ── GET single RFP ────────────────────────────────────────────────
+router.get('/rfps/:id', protect, wrap(async (req, res) => {
+  try {
+    const rfp = await RFP.findByPk(req.params.id, {
+      include: [{ model: User, as: 'client', attributes: ['id','name','company','role'], required: false }],
+    });
+    if (!rfp) return fail(res, 'RFP not found', 404);
+    // Increment view count
+    await rfp.increment('view_count').catch(() => {});
+    ok(res, { rfp: rfp.toJSON() });
+  } catch(e) { fail(res, e.message); }
+}));
+
+// ── CREATE RFP ────────────────────────────────────────────────────
+router.post('/rfps', protect, wrap(async (req, res) => {
+  const userId = uid(req);
+  const { title, description, project_type, proposal_deadline,
+          budget_min, budget_max, currency = 'USD',
+          privacy_level = 'public', status = 'draft', location, industry } = req.body;
+  if (!title)             return fail(res, 'title is required');
+  if (!description)       return fail(res, 'description is required');
+  if (!project_type)      return fail(res, 'project_type is required');
+  if (!proposal_deadline) return fail(res, 'proposal_deadline is required');
+  try {
+    const rfp = await RFP.create({
+      client_id : userId, title, description, project_type,
+      proposal_deadline: new Date(proposal_deadline),
+      budget_min: budget_min ? parseFloat(budget_min) : null,
+      budget_max: budget_max ? parseFloat(budget_max) : null,
+      currency, privacy_level, status,
+      location: location || null,
+      view_count: 0,
+    });
+    ok(res, { rfp: rfp.toJSON() }, 'RFP created');
+  } catch(e) { fail(res, e.message); }
+}));
+
+// ── PUBLISH RFP (draft → open) ────────────────────────────────────
+router.post('/rfps/:id/publish', protect, wrap(async (req, res) => {
+  const userId = uid(req);
+  const rfp = await RFP.findByPk(req.params.id);
+  if (!rfp) return fail(res, 'RFP not found', 404);
+  if (String(rfp.client_id) !== String(userId) && req.user?.role !== 'admin')
+    return fail(res, 'Not authorised', 403);
+  await rfp.update({ status: 'open' });
+  ok(res, {}, 'RFP published');
+}));
+
+// ── CLOSE RFP ─────────────────────────────────────────────────────
+router.post('/rfps/:id/close', protect, wrap(async (req, res) => {
+  const userId = uid(req);
+  const rfp = await RFP.findByPk(req.params.id);
+  if (!rfp) return fail(res, 'RFP not found', 404);
+  if (String(rfp.client_id) !== String(userId) && req.user?.role !== 'admin')
+    return fail(res, 'Not authorised', 403);
+  await rfp.update({ status: 'completed' });
+  ok(res, {}, 'RFP closed');
+}));
+
+// ── SUBMIT proposal / BOQ ─────────────────────────────────────────
+router.post('/rfps/:id/proposals', protect, wrap(async (req, res) => {
+  const userId = uid(req);
+  const { cover_letter, proposed_budget, currency = 'USD',
+          estimated_duration, start_date, relevant_experience,
+          proposed_team, notes, boq_items, boq_total } = req.body;
+  if (!cover_letter)       return fail(res, 'cover_letter is required');
+  if (!proposed_budget)    return fail(res, 'proposed_budget is required');
+  if (!estimated_duration) return fail(res, 'estimated_duration is required');
+  const rfp = await RFP.findByPk(req.params.id);
+  if (!rfp) return fail(res, 'RFP not found', 404);
+  const data = {
+    rfp_id: req.params.id, professional_id: userId,
+    cover_letter, proposed_budget: parseFloat(proposed_budget), currency,
+    estimated_duration, start_date: start_date || null,
+    relevant_experience: relevant_experience || '',
+    proposed_team: proposed_team || '', notes: notes || '',
+    boq_items: boq_items || [], boq_total: boq_total || 0,
+    status: 'submitted', createdAt: new Date(),
+  };
+  let proposal = null;
+  if (Proposal) { try { proposal = (await Proposal.create(data)).toJSON(); } catch(e) {} }
+  if (!proposal) { proposal = { ...data, id: String(_boid++) }; mem.proposals.unshift(proposal); }
+  const prof = await getUser(userId);
+  await pushNotif(String(rfp.client_id), 'rfp',
+    `New proposal for: ${rfp.title}`,
+    `${prof?.name || 'A professional'} submitted a proposal — Budget: ${currency} ${parseFloat(proposed_budget).toLocaleString()}`
+  );
+  ok(res, { proposal }, 'Proposal submitted');
+}));
+
+// ── GET proposals for an RFP (client owner + admin) ───────────────
+router.get('/rfps/:id/proposals', protect, wrap(async (req, res) => {
+  const userId = uid(req);
+  const rfp    = await RFP.findByPk(req.params.id);
+  if (!rfp) return fail(res, 'RFP not found', 404);
+  if (String(rfp.client_id) !== String(userId) && req.user?.role !== 'admin')
+    return fail(res, 'Not authorised', 403);
+  let proposals = [];
+  if (Proposal) {
+    try {
+      proposals = (await Proposal.findAll({
+        where: { rfp_id: req.params.id }, order: [['createdAt', 'DESC']],
+        include: [{ model: User, as: 'professional', attributes: ['id','name','company','role'], required: false }],
+      })).map(p => p.toJSON());
+    } catch(e) { proposals = mem.proposals.filter(p => p.rfp_id === req.params.id); }
+  } else { proposals = mem.proposals.filter(p => p.rfp_id === req.params.id); }
+  ok(res, { proposals });
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+//  MEMBERS DIRECTORY
+// ═══════════════════════════════════════════════════════════════════
+
+router.get('/members', protect, wrap(async (req, res) => {
+  const q     = (req.query.q || '').toLowerCase();
+  const limit = Math.min(100, parseInt(req.query.limit) || 50);
+  let users   = await getAllUsers();
+  if (q) users = users.filter(u =>
+    (u.name||'').toLowerCase().includes(q) ||
+    (u.company||'').toLowerCase().includes(q) ||
+    (u.role||'').toLowerCase().includes(q)
+  );
+  const members = users.slice(0, limit).map(u => ({
+    id: u.id, name: u.name, company: u.company || '',
+    role: u.role || '', location: u.location || '', bio: u.bio || '',
+    subscription_tier: u.subscription_tier || 'free',
+    is_verified: u.is_verified || false, createdAt: u.createdAt,
+  }));
+  ok(res, { members, total: members.length });
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN — SUBSCRIPTION, BAN, STATS
+// ═══════════════════════════════════════════════════════════════════
+
+router.put('/admin/users/:id/subscription', protect, adminOnly, wrap(async (req, res) => {
+  const { tier, status = 'active', end_date, note } = req.body;
+  const userId = req.params.id;
+  const subEnd = end_date ? new Date(end_date) : null;
+  await User.update({
+    subscription_tier: tier || 'free', subscription_status: status,
+    subscription_end: subEnd,
+  }, { where: { id: userId } });
+  const labels = { monthly: 'Monthly Pro', annual: 'Annual Pro', free: 'Free' };
+  let msg = `Your plan has been updated to ${labels[tier] || tier}`;
+  if (subEnd) msg += subEnd.getFullYear() >= 2099 ? ' — permanent access granted!'
+    : ` — valid until ${subEnd.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}`;
+  await pushNotif(userId, 'system', msg, note || '');
+  const updated = await User.findByPk(userId);
+  ok(res, { user: updated ? updated.toPublicJSON() : { id: userId } }, 'Subscription updated');
+}));
+
+router.put('/admin/users/:id/ban', protect, adminOnly, wrap(async (req, res) => {
+  const { banned } = req.body;
+  await User.update({ is_active: !banned }, { where: { id: req.params.id } });
+  await pushNotif(req.params.id, 'ban',
+    banned ? 'Your account has been suspended' : 'Your account has been reinstated');
+  ok(res, {}, banned ? 'User banned' : 'User unbanned');
+}));
+
+router.get('/admin/stats-extended', protect, adminOnly, wrap(async (req, res) => {
+  const users   = await getAllUsers();
+  const monthly = users.filter(u => u.subscription_tier === 'monthly' && u.subscription_status === 'active').length;
+  const annual  = users.filter(u => u.subscription_tier === 'annual'  && u.subscription_status === 'active').length;
+  let openRfps  = 0;
+  try { openRfps = await RFP.count({ where: { status: 'open' } }); } catch(e) {}
+  let totalPosts = 0;
+  if (Post) { try { totalPosts = await Post.count(); } catch(e) {} }
+  ok(res, {
+    users        : users.length,
+    monthly_subs : monthly,
+    annual_subs  : annual,
+    free_users   : users.filter(u => !u.subscription_tier || u.subscription_tier === 'free').length,
+    mrr          : monthly * 49 + annual * 39,
+    arr          : (monthly * 49 + annual * 39) * 12,
+    open_rfps    : openRfps,
+    posts        : totalPosts,
+    messages     : mem.messages.length,
+    broadcasts   : 0,
+  });
+}));
+
+// ═══════════════════════════════════════════════════════════════════
+//  ERROR HANDLER
+// ═══════════════════════════════════════════════════════════════════
+
+router.use((err, req, res, next) => {
+  console.error('[ext]', err.message);
+  res.status(err.status || 500).json({
+    status: 'error',
+    error: { message: err.message || 'Internal server error' },
+  });
+});
+
+module.exports = router;
