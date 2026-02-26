@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuildConnect Pro — Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --w:#ffffff;--off:#f8f9f6;--off2:#f0f2ed;--off3:#e8ebe4;
+  --ink:#111714;--ink2:#2c342f;--ink3:#596660;--ink4:#9aada6;--ink5:#c8d4cf;
+  --sage:#1e4d3a;--sage2:#2a6650;--sage3:#36806a;--sage4:rgba(30,77,58,.1);--sage5:rgba(30,77,58,.05);
+  --rust:#c24a1e;--rust2:rgba(194,74,30,.1);
+  --amber:#b07820;--amber2:rgba(176,120,32,.1);
+  --red:#b83030;--red2:rgba(184,48,48,.1);
+  --blue:#2050a0;--blue2:rgba(32,80,160,.1);
+  --border:rgba(17,23,20,.08);--border2:rgba(17,23,20,.15);
+  --shadow:0 1px 3px rgba(17,23,20,.07),0 2px 8px rgba(17,23,20,.05);
+  --shadow2:0 4px 20px rgba(17,23,20,.1);
+  --serif:'Instrument Serif',Georgia,serif;
+  --mono:'Geist Mono',monospace;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --nav:60px;--left:260px;--right:288px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--off);color:var(--ink);font-family:var(--sans);font-size:14px;-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(circle,rgba(17,23,20,.03) 1px,transparent 1px);background-size:22px 22px;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--off2);}
+::-webkit-scrollbar-thumb{background:var(--ink5);border-radius:2px;}
+
+/* ════ LIBRARY ════ */
+.lib-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.lib-cat{padding:7px 16px;background:var(--off2);border:1px solid var(--border2);
+  border-radius:20px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--ink3);cursor:pointer;transition:all .2s;}
+.lib-cat:hover{border-color:var(--sage);color:var(--sage);}
+.lib-cat.on{background:var(--sage);color:var(--w);border-color:var(--sage);}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.lib-card{background:var(--w);border:1px solid var(--border2);border-radius:12px;
+  padding:18px;transition:all .2s;position:relative;overflow:hidden;}
+.lib-card:hover{box-shadow:var(--shadow2);border-color:var(--sage3);transform:translateY(-1px);}
+.lib-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--sage),var(--sage3));}
+.lib-icon{width:40px;height:40px;border-radius:8px;background:var(--sage5);
+  display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:20px;}
+.lib-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;line-height:1.4;}
+.lib-meta{font-family:var(--mono);font-size:10px;color:var(--ink4);margin-bottom:10px;}
+.lib-desc{font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:14px;}
+.lib-dl{display:flex;align-items:center;gap:6px;padding:8px 14px;
+  background:var(--sage);color:var(--w);border:none;border-radius:20px;
+  font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;
+  transition:all .2s;text-decoration:none;}
+.lib-dl:hover{background:var(--sage2);transform:translateY(-1px);}
+.lib-dl.locked{background:var(--off3);color:var(--ink4);cursor:not-allowed;}
+.lib-lock{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
+  background:var(--amber2);color:var(--amber);border:1px solid rgba(176,120,32,.2);
+  border-radius:20px;font-family:var(--mono);font-size:10px;letter-spacing:.5px;}
+.lib-size{font-family:var(--mono);font-size:9px;color:var(--ink4);margin-left:auto;}
+.lib-empty{text-align:center;padding:48px 24px;font-family:var(--mono);
+  font-size:11px;color:var(--ink4);letter-spacing:1px;}
+
+/* ════ TOPNAV ════ */
+.tnav{position:fixed;top:0;left:0;right:0;height:var(--nav);z-index:400;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:14px;
+  box-shadow:var(--shadow);}
+.tnav-logo{font-family:var(--serif);font-size:19px;color:var(--ink);text-decoration:none;white-space:nowrap;margin-right:4px;}
+.tnav-logo em{color:var(--sage);font-style:normal;}
+.tnav-search{flex:1;max-width:360px;position:relative;}
+.tnav-search input{width:100%;background:var(--off2);border:1px solid var(--border);
+  padding:8px 14px 8px 36px;font-family:var(--mono);font-size:12px;color:var(--ink);
+  outline:none;transition:all .2s;border-radius:20px;}
+.tnav-search input:focus{background:var(--w);border-color:var(--sage);box-shadow:0 0 0 3px var(--sage4);}
+.tnav-search input::placeholder{color:var(--ink4);}
+.tnav-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink4);}
+.tnav-r{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.role-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;
+  font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;}
+.role-pill.pro{border-color:rgba(30,77,58,.3);color:var(--sage);background:var(--sage5);}
+.role-pill.cli{border-color:rgba(194,74,30,.3);color:var(--rust);background:var(--rust2);}
+.role-dot{width:6px;height:6px;border-radius:50%;}
+.icon-btn{width:36px;height:36px;background:var(--off2);border:1px solid var(--border);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink3);transition:all .2s;position:relative;}
+.icon-btn:hover{border-color:var(--sage);color:var(--sage);}
+.icon-btn .red-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--w);display:none;}
+.icon-btn .red-dot.show{display:block;}
+.tnav-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:15px;color:var(--w);cursor:pointer;flex-shrink:0;position:relative;}
+.tnav-avatar .online-ring{position:absolute;bottom:0;right:0;width:10px;height:10px;
+  background:var(--sage3);border-radius:50%;border:2px solid var(--w);}
+
+/* ════ LAYOUT ════ */
+.layout{display:flex;margin-top:var(--nav);min-height:calc(100vh - var(--nav));position:relative;z-index:1;}
+
+/* ── LEFT SIDEBAR ── */
+.lsb{width:var(--left);flex-shrink:0;background:var(--w);border-right:1px solid var(--border);
+  position:sticky;top:var(--nav);height:calc(100vh - var(--nav));overflow-y:auto;display:flex;flex-direction:column;}
+.profile-snap{padding:20px 18px;border-bottom:1px solid var(--border);}
+.ps-avatar{width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:22px;color:var(--w);margin-bottom:11px;}
+.ps-name{font-family:var(--serif);font-size:17px;color:var(--ink);margin-bottom:3px;line-height:1.1;}
+.ps-tagline{font-size:12px;color:var(--ink3);margin-bottom:10px;}
+.ps-company{font-family:var(--mono);font-size:10px;color:var(--ink4);margin-bottom:12px;}
+.ps-stats{display:flex;gap:16px;}
+.ps-stat{text-align:center;}
+.ps-stat-val{font-family:var(--serif);font-size:18px;color:var(--ink);line-height:1;}
+.ps-stat-lbl{font-family:var(--mono);font-size:9px;color:var(--ink4);letter-spacing:1px;text-transform:uppercase;}
+.ps-sub{display:flex;align-items:center;gap:6px;margin-top:12px;padding:7px 10px;background:var(--off2);
+  font-family:var(--mono);font-size:10px;color:var(--ink3);border-radius:4px;}
+.sub-dot{width:6px;height:6px;border-radius:50%;}
+
+.lnav{padding:8px 0;flex:1;}
+.lnav-sec{padding:12px 18px 4px;font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);}
+.lnav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;background:none;border:none;
+  color:var(--ink3);font-family:var(--sans);font-size:13px;width:100%;text-align:left;
+  cursor:pointer;transition:all .15s;position:relative;}
+.lnav-item:hover{color:var(--ink);background:var(--off);}
+.lnav-item.on{color:var(--sage);}
+.lnav-item.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2.5px;background:var(--sage);}
+.lnav-item svg{width:16px;height:16px;opacity:.6;flex-shrink:0;}
+.lnav-item.on svg{opacity:1;}
+.lnav-badge{margin-left:auto;background:var(--sage);color:var(--w);font-family:var(--mono);font-size:9px;padding:1px 7px;border-radius:10px;}
+.lnav-badge.red{background:var(--red);}
+.lsb-footer{padding:14px 18px;border-top:1px solid var(--border);}
+.logout-btn{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;cursor:pointer;
+  color:var(--ink3);font-family:var(--sans);font-size:12px;padding:6px 0;transition:color .2s;}
+.logout-btn:hover{color:var(--red);}
+
+/* ── FEED ── */
+.feed{flex:1;padding:20px;min-width:0;}
+
+/* ── RIGHT PANEL ── */
+.rpanel{width:var(--right);flex-shrink:0;padding:20px 16px;
+  position:sticky;top:var(--nav);height:calc(100vh - var(--nav));overflow-y:auto;}
+
+/* ════ VIEWS ════ */
+.view{display:none;}
+.view.on{display:block;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ════ PANELS / CARDS ════ */
+.panel{background:var(--w);border:1px solid var(--border);margin-bottom:12px;border-radius:8px;overflow:hidden;}
+.panel-hd{padding:13px 16px;border-bottom:1px solid var(--border);background:var(--off2);display:flex;align-items:center;gap:8px;}
+.panel-ttl{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink2);}
+.panel-act{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--sage);background:none;border:none;cursor:pointer;}
+.panel-act:hover{text-decoration:underline;}
+.panel-body{padding:16px;}
+
+/* ════ POST COMPOSER ════ */
+.composer{background:var(--w);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+.composer-top{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
+.composer-avatar{width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:17px;color:var(--w);}
+.composer-textarea{flex:1;background:var(--off2);border:1px solid var(--border);color:var(--ink);
+  padding:11px 14px;font-family:var(--sans);font-size:14px;line-height:1.5;
+  outline:none;resize:none;min-height:80px;border-radius:8px;transition:all .2s;}
+.composer-textarea:focus{background:var(--w);border-color:var(--sage);box-shadow:0 0 0 3px var(--sage4);}
+.composer-textarea::placeholder{color:var(--ink4);}
+.composer-bottom{display:flex;align-items:center;gap:10px;}
+.composer-tool{background:none;border:none;cursor:pointer;color:var(--ink3);
+  display:flex;align-items:center;gap:5px;font-size:12px;padding:6px 10px;border-radius:6px;
+  transition:all .15s;font-family:var(--sans);}
+.composer-tool:hover{background:var(--off2);color:var(--sage);}
+.composer-media-preview{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0;}
+.cmp-img{position:relative;width:72px;height:72px;}
+.cmp-img img{width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+.cmp-img-rm{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--red);border-radius:50%;
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;}
+.post-btn{margin-left:auto;padding:9px 22px;background:var(--sage);color:var(--w);
+  border:none;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;
+  border-radius:20px;transition:all .2s;}
+.post-btn:hover:not(:disabled){background:var(--sage2);}
+.post-btn:disabled{opacity:.5;cursor:not-allowed;}
+.rfp-link-picker{background:var(--off2);border:1px solid var(--border);margin:8px 0 0;padding:10px;border-radius:6px;}
+.rfp-link-picker select{width:100%;background:var(--w);border:1px solid var(--border);padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--ink);outline:none;border-radius:4px;}
+
+/* ════ FEED FILTERS ════ */
+.feed-filters{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;}
+.ff{padding:6px 14px;background:var(--w);border:1px solid var(--border);border-radius:20px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.5px;color:var(--ink3);cursor:pointer;
+  white-space:nowrap;transition:all .15s;}
+.ff.on,.ff:hover{background:var(--sage);color:var(--w);border-color:var(--sage);}
+
+/* ════ POST CARD ════ */
+.post-card{background:var(--w);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;transition:border-color .15s;}
+.post-card:hover{border-color:var(--border2);}
+.pc-top{padding:16px 16px 0;display:flex;align-items:flex-start;gap:11px;}
+.pc-avatar{width:42px;height:42px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:17px;color:var(--w);cursor:pointer;}
+.pc-meta{flex:1;}
+.pc-name{font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;}
+.pc-name:hover{color:var(--sage);}
+.pc-sub{font-family:var(--mono);font-size:10px;color:var(--ink4);}
+.pc-badge-row{display:flex;gap:5px;margin-top:4px;}
+.pc-time{font-family:var(--mono);font-size:10px;color:var(--ink4);margin-left:auto;}
+.pc-pin{font-size:11px;margin-left:6px;}
+.pc-body{padding:12px 16px;font-size:14px;color:var(--ink2);line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+.pc-rfp{margin:0 16px 8px;background:var(--sage5);border:1px solid rgba(30,77,58,.15);border-radius:6px;padding:10px 12px;cursor:pointer;}
+.pc-rfp-label{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);margin-bottom:3px;}
+.pc-rfp-title{font-family:var(--serif);font-size:14px;color:var(--ink);}
+.pc-media{display:grid;gap:3px;margin:0 16px 8px;}
+.pc-media.c1{grid-template-columns:1fr;}
+.pc-media.c2{grid-template-columns:1fr 1fr;}
+.pc-media.c3{grid-template-columns:1fr 1fr 1fr;}
+.pc-media img{width:100%;border-radius:6px;cursor:pointer;max-height:300px;object-fit:cover;}
+.pc-bottom{padding:8px 16px 12px;border-top:1px solid var(--border);background:var(--off2);display:flex;align-items:center;gap:6px;}
+.pc-action{display:flex;align-items:center;gap:5px;padding:6px 12px;background:none;border:none;
+  font-family:var(--sans);font-size:12px;color:var(--ink3);cursor:pointer;border-radius:20px;
+  transition:all .15s;}
+.pc-action:hover{background:var(--off3);color:var(--sage);}
+.pc-action.liked{color:var(--rust);}
+.pc-action svg{width:14px;height:14px;}
+.pc-like-count{font-family:var(--mono);font-size:11px;}
+.pc-more{margin-left:auto;display:flex;gap:4px;}
+.pc-delete{padding:6px 10px;background:none;border:none;font-size:11px;color:var(--ink4);cursor:pointer;border-radius:4px;transition:color .15s;}
+.pc-delete:hover{color:var(--red);}
+
+/* ── COMMENTS ── */
+.comments-section{padding:0 16px 12px;border-top:1px solid var(--border);}
+.comment-compose{display:flex;gap:9px;align-items:flex-start;padding:10px 0 8px;}
+.comment-avatar{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:12px;color:var(--w);}
+.comment-inp{flex:1;background:var(--off2);border:1px solid var(--border);color:var(--ink);
+  padding:7px 12px;font-family:var(--sans);font-size:13px;outline:none;border-radius:20px;transition:all .2s;}
+.comment-inp:focus{background:var(--w);border-color:var(--sage);}
+.comment-submit{background:var(--sage);color:var(--w);border:none;padding:7px 14px;font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:20px;transition:background .2s;}
+.comment-submit:hover{background:var(--sage2);}
+.comment-item{display:flex;gap:9px;margin-bottom:8px;}
+.comment-body{background:var(--off2);border-radius:12px;padding:8px 12px;flex:1;}
+.comment-name{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.comment-text{font-size:13px;color:var(--ink2);line-height:1.5;}
+.comment-time{font-family:var(--mono);font-size:10px;color:var(--ink4);margin-top:3px;}
+
+/* ════ MESSAGING ════ */
+.msg-layout{display:grid;grid-template-columns:280px 1fr;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--w);min-height:600px;}
+.msg-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.msg-sidebar-hd{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--off2);display:flex;align-items:center;justify-content:space-between;}
+.msg-sidebar-title{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink2);}
+.msg-compose-btn{background:var(--sage);color:var(--w);border:none;padding:5px 12px;font-family:var(--mono);font-size:9px;letter-spacing:1px;cursor:pointer;border-radius:12px;transition:background .2s;}
+.msg-compose-btn:hover{background:var(--sage2);}
+.conv-list{flex:1;overflow-y:auto;}
+.conv-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.conv-item:hover,.conv-item.on{background:var(--sage5);}
+.conv-item.on{border-left:2px solid var(--sage);}
+.conv-avatar{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:15px;color:var(--w);}
+.conv-info{flex:1;min-width:0;}
+.conv-name{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;}
+.conv-preview{font-size:11px;color:var(--ink4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.conv-time{font-family:var(--mono);font-size:10px;color:var(--ink4);}
+.conv-unread{width:8px;height:8px;background:var(--sage);border-radius:50%;flex-shrink:0;margin-top:4px;}
+.msg-main{display:flex;flex-direction:column;}
+.msg-main-hd{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--off2);display:flex;align-items:center;gap:10px;}
+.msg-main-avatar{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:14px;color:var(--w);}
+.msg-main-name{font-size:14px;font-weight:600;color:var(--ink);}
+.msg-main-role{font-family:var(--mono);font-size:10px;color:var(--ink4);}
+.msg-thread{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.msg-bubble{max-width:70%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;}
+.msg-bubble.mine{background:var(--sage);color:var(--w);margin-left:auto;border-bottom-right-radius:4px;}
+.msg-bubble.theirs{background:var(--off2);color:var(--ink2);border-bottom-left-radius:4px;}
+.msg-bubble-meta{font-family:var(--mono);font-size:9px;opacity:.6;margin-top:4px;}
+.msg-bubble-subj{font-size:10px;font-weight:600;margin-bottom:4px;opacity:.8;}
+.msg-input-row{padding:14px 18px;border-top:1px solid var(--border);background:var(--off2);display:flex;gap:10px;align-items:flex-end;}
+.msg-textarea{flex:1;background:var(--w);border:1px solid var(--border);color:var(--ink);
+  padding:10px 14px;font-family:var(--sans);font-size:13px;outline:none;resize:none;
+  min-height:44px;max-height:120px;border-radius:10px;transition:border-color .2s;}
+.msg-textarea:focus{border-color:var(--sage);}
+.msg-send-btn{padding:10px 20px;background:var(--sage);color:var(--w);border:none;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border-radius:20px;transition:background .2s;flex-shrink:0;}
+.msg-send-btn:hover{background:var(--sage2);}
+.msg-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--ink4);font-family:var(--mono);font-size:11px;letter-spacing:1px;}
+
+/* ════ PROFILE PAGE ════ */
+.profile-cover{height:100px;background:linear-gradient(120deg,var(--sage),var(--sage3));border-radius:10px 10px 0 0;position:relative;margin:-1px;}
+.profile-hd{background:var(--w);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.profile-hd-body{padding:0 22px 22px;}
+.profile-big-av{width:72px;height:72px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:28px;color:var(--w);border:4px solid var(--w);margin-top:-36px;margin-bottom:12px;box-shadow:var(--shadow);}
+.profile-name-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
+.profile-fullname{font-family:var(--serif);font-size:22px;color:var(--ink);}
+.profile-title{font-size:13px;color:var(--ink3);margin-bottom:10px;}
+.profile-bio{font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:14px;}
+.profile-stats-row{display:flex;gap:20px;padding-top:12px;border-top:1px solid var(--border);}
+.profile-stat{text-align:center;}
+.profile-stat-val{font-family:var(--serif);font-size:20px;color:var(--ink);line-height:1;}
+.profile-stat-lbl{font-family:var(--mono);font-size:9px;color:var(--ink4);letter-spacing:1px;text-transform:uppercase;}
+.edit-btn{padding:8px 18px;border:1px solid var(--border2);background:var(--w);color:var(--ink2);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:20px;transition:all .15s;}
+.edit-btn:hover{border-color:var(--sage);color:var(--sage);}
+.msg-btn{padding:8px 18px;background:var(--sage);color:var(--w);border:none;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:20px;transition:background .2s;margin-left:8px;}
+.msg-btn:hover{background:var(--sage2);}
+
+/* ════ MY RFPs ════ */
+.page-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;background:var(--w);border-radius:8px 8px 0 0;overflow:hidden;}
+.ptab{flex:1;padding:11px;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--ink3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;text-align:center;}
+.ptab.on{color:var(--sage);border-bottom-color:var(--sage);}
+.rfp-card{background:var(--w);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
+.rfp-card:hover{border-color:var(--border2);box-shadow:var(--shadow);}
+.rfp-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.rfp-card-title{font-family:var(--serif);font-size:16px;color:var(--ink);line-height:1.2;}
+.rfp-card-meta{font-family:var(--mono);font-size:10px;color:var(--ink4);}
+.rfp-card-bottom{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding-top:10px;border-top:1px solid var(--border);}
+.rfp-meta-item{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;color:var(--ink3);}
+.rfp-meta-item svg{color:var(--sage);}
+
+/* ════ NOTIFICATIONS ════ */
+.notif-item{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.notif-item:hover{background:var(--off2);}
+.notif-item.unread{background:var(--sage5);}
+.notif-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+.notif-body{flex:1;}
+.notif-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;}
+.notif-text{font-size:12px;color:var(--ink3);line-height:1.4;}
+.notif-time{font-family:var(--mono);font-size:10px;color:var(--ink4);}
+
+/* ════ MEMBERS DIRECTORY ════ */
+.member-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.member-card{background:var(--w);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .15s;text-align:center;}
+.member-card:hover{border-color:var(--border2);box-shadow:var(--shadow);transform:translateY(-1px);}
+.mc-avatar{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:21px;color:var(--w);margin:0 auto 10px;}
+.mc-name{font-family:var(--serif);font-size:15px;color:var(--ink);margin-bottom:3px;}
+.mc-company{font-size:11px;color:var(--ink3);margin-bottom:8px;}
+.mc-msg-btn{padding:6px 14px;background:var(--sage5);border:1px solid rgba(30,77,58,.2);color:var(--sage);font-family:var(--mono);font-size:9px;letter-spacing:1px;cursor:pointer;border-radius:20px;transition:all .15s;}
+.mc-msg-btn:hover{background:var(--sage);color:var(--w);}
+
+/* ════ BADGES ════ */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;border:1px solid;border-radius:3px;white-space:nowrap;}
+.badge::before{content:'◆';font-size:5px;}
+.b-sage  {background:var(--sage4); color:var(--sage);  border-color:rgba(30,77,58,.2);}
+.b-green {background:rgba(34,197,94,.08);color:#1a7a40;border-color:rgba(34,197,94,.2);}
+.b-rust  {background:var(--rust2); color:var(--rust);  border-color:rgba(194,74,30,.2);}
+.b-amber {background:var(--amber2);color:var(--amber); border-color:rgba(176,120,32,.2);}
+.b-red   {background:var(--red2);  color:var(--red);   border-color:rgba(184,48,48,.2);}
+.b-blue  {background:var(--blue2); color:var(--blue);  border-color:rgba(32,80,160,.2);}
+.b-gray  {background:rgba(17,23,20,.05);color:var(--ink3);border-color:var(--border);}
+.b-gold  {background:rgba(176,120,32,.08);color:#8a5c10;border-color:rgba(176,120,32,.2);}
+
+/* ════ MODALS ════ */
+.modal-ov{position:fixed;inset:0;z-index:700;background:rgba(17,23,20,.5);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-ov.on{display:flex;}
+.modal{background:var(--w);border:1px solid var(--border2);width:100%;max-width:540px;box-shadow:var(--shadow2);border-radius:10px;position:relative;animation:fadeUp .2s ease;}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;background:var(--sage);border-radius:10px 10px 0 0;}
+.modal-hd{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.modal-title{font-family:var(--serif);font-size:18px;color:var(--ink);}
+.modal-x{margin-left:auto;background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;line-height:1;transition:color .15s;}
+.modal-x:hover{color:var(--red);}
+.modal-body{padding:18px 22px;max-height:65vh;overflow-y:auto;}
+.modal-row{margin-bottom:14px;}
+.modal-lbl{display:block;font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
+.modal-inp,.modal-ta,.modal-sel{width:100%;background:var(--off2);border:1px solid var(--border);color:var(--ink);padding:10px 13px;font-family:var(--sans);font-size:13px;outline:none;transition:border-color .2s;border-radius:6px;}
+.modal-inp:focus,.modal-ta:focus,.modal-sel:focus{border-color:var(--sage);background:var(--w);}
+.modal-ta{min-height:90px;resize:vertical;}
+.modal-sel{cursor:pointer;font-family:var(--mono);font-size:11px;}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-val{font-size:13px;color:var(--ink);padding:9px 13px;background:var(--off2);border:1px solid var(--border);border-radius:6px;}
+.modal-ft{padding:13px 22px;border-top:1px solid var(--border);background:var(--off2);display:flex;gap:8px;justify-content:flex-end;border-radius:0 0 10px 10px;}
+.btn{padding:9px 18px;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid;transition:all .15s;border-radius:20px;}
+.btn-p{background:var(--sage);color:var(--w);border-color:var(--sage);}
+.btn-p:hover{background:var(--sage2);}
+.btn-g{background:var(--w);color:var(--ink2);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--ink2);}
+.btn-r{background:var(--red2);color:var(--red);border-color:rgba(184,48,48,.3);}
+.btn-r:hover{background:var(--red);color:var(--w);}
+
+/* ════ RIGHT WIDGETS ════ */
+.widget{background:var(--w);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+.widget-hd{padding:11px 14px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink2);background:var(--off2);}
+.widget-body{padding:12px 14px;}
+.w-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink2);}
+.w-row:last-child{border-bottom:none;}
+.w-val{font-family:var(--mono);font-size:11px;color:var(--ink);}
+.upgrade-box{background:linear-gradient(135deg,var(--sage5),rgba(30,77,58,.08));border:1px dashed rgba(30,77,58,.3);padding:14px;margin:0 14px 14px;border-radius:6px;text-align:center;}
+.ub-title{font-family:var(--serif);font-size:15px;color:var(--sage);margin-bottom:5px;}
+.ub-sub{font-size:12px;color:var(--ink3);margin-bottom:10px;line-height:1.4;}
+.ub-btn{width:100%;padding:8px;background:var(--sage);color:var(--w);border:none;font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;border-radius:20px;transition:background .2s;}
+.ub-btn:hover{background:var(--sage2);}
+.suggested-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.suggested-item:last-child{border-bottom:none;}
+.suggested-item:hover .si-title{color:var(--sage);}
+.si-avatar{width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:13px;color:var(--w);}
+.si-title{font-size:12px;font-weight:500;color:var(--ink);margin-bottom:2px;transition:color .15s;}
+.si-sub{font-family:var(--mono);font-size:9px;color:var(--ink4);}
+.online-members{display:flex;flex-wrap:wrap;gap:4px;}
+.online-av{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:11px;color:var(--w);cursor:pointer;position:relative;}
+.online-av::after{content:'';position:absolute;bottom:0;right:0;width:7px;height:7px;background:var(--sage3);border-radius:50%;border:1.5px solid var(--w);}
+
+/* ════ EMPTY ════ */
+.empty{text-align:center;padding:48px 20px;font-family:var(--mono);font-size:11px;color:var(--ink4);letter-spacing:1px;}
+.empty-icon{font-size:32px;opacity:.2;margin-bottom:10px;}
+
+/* ════ TOAST ════ */
+.toasts{position:fixed;bottom:20px;right:20px;z-index:900;display:flex;flex-direction:column;gap:7px;}
+.toast{padding:11px 16px;background:var(--w);border:1px solid;display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;min-width:220px;box-shadow:var(--shadow2);animation:fadeUp .25s ease;border-radius:8px;}
+.toast.ok{color:var(--sage);border-color:rgba(30,77,58,.25);}
+.toast.err{color:var(--red);border-color:rgba(184,48,48,.25);}
+.toast.inf{color:var(--blue);border-color:rgba(32,80,160,.2);}
+
+/* ════ IMAGE MODAL ════ */
+#imgModal{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;cursor:zoom-out;}
+#imgModal.on{display:flex;}
+#imgModal img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:4px;}
+
+/* ════ RESPONSIVE ════ */
+@media(max-width:1200px){.rpanel{display:none;}}
+@media(max-width:900px){.lsb{display:none;}.feed{padding:12px;}}
+@media(max-width:600px){.tnav{padding:0 12px;}.tnav-search{display:none;}.msg-layout{grid-template-columns:1fr;}.member-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- TOPNAV -->
+<nav class="tnav">
+  <a href="buildconnect-home.html" class="tnav-logo">Build<em>Connect</em></a>
+  <div class="tnav-search">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="searchInp" placeholder="Search people, posts, RFPs…" oninput="globalSearch(this.value)">
+  </div>
+  <div class="tnav-r">
+    <div class="role-pill" id="rolePill">
+      <div class="role-dot" id="roleDot" style="background:var(--ink4)"></div>
+      <span id="roleLabel">Loading</span>
+    </div>
+    <div class="icon-btn" id="notifBtn" onclick="goView('notifications')" title="Notifications">
+      <div class="red-dot" id="notifDot"></div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </div>
+    <div class="icon-btn" onclick="goView('messages')" title="Messages">
+      <div class="red-dot" id="msgDot"></div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    </div>
+    <div class="tnav-avatar" id="tnavAvatar" onclick="goView('profile')" style="background:var(--sage)">
+      <span id="tnavInit">?</span>
+      <div class="online-ring"></div>
+    </div>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+<!-- LEFT SIDEBAR -->
+<aside class="lsb">
+  <div class="profile-snap">
+    <div class="ps-avatar" id="psAvatar" style="background:var(--sage)">?</div>
+    <div class="ps-name" id="psName">Loading…</div>
+    <div class="ps-tagline" id="psTagline">—</div>
+    <div class="ps-company" id="psCompany"></div>
+    <div class="ps-stats">
+      <div class="ps-stat"><div class="ps-stat-val" id="psPostCount">0</div><div class="ps-stat-lbl">Posts</div></div>
+      <div class="ps-stat"><div class="ps-stat-val" id="psRfpCount">0</div><div class="ps-stat-lbl">RFPs</div></div>
+    </div>
+    <div class="ps-sub">
+      <div class="sub-dot" id="subDot" style="background:var(--ink4)"></div>
+      <span id="subLabel">Free</span>
+    </div>
+  </div>
+
+  <div class="lnav">
+    <div class="lnav-sec">Feed</div>
+    <button class="lnav-item on" onclick="goView('feed')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Home Feed
+    </button>
+    <button class="lnav-item" onclick="goView('members')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Members
+    </button>
+    <button class="lnav-item" onclick="goView('library')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Library
+    </button>
+    <div class="lnav-sec">My Space</div>
+    <button class="lnav-item" id="myRfpsNav" onclick="goView('myrfps')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>My RFPs
+      <span class="lnav-badge" id="myRfpBadge">0</span>
+    </button>
+    <button class="lnav-item" onclick="goView('messages')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Messages
+      <span class="lnav-badge red" id="msgBadge" style="display:none">!</span>
+    </button>
+    <button class="lnav-item" onclick="goView('notifications')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications
+      <span class="lnav-badge red" id="notifBadge" style="display:none">!</span>
+    </button>
+    <button class="lnav-item" onclick="goView('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile
+    </button>
+  </div>
+
+  <div class="lsb-footer">
+    <button class="logout-btn" onclick="doLogout()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN FEED -->
+<main class="feed">
+
+  <!-- ════ VIEW: FEED ════ -->
+  <div class="view on" id="view-feed">
+
+    <!-- Client: Post RFP CTA -->
+    <div id="clientCta" style="display:none;background:var(--sage);border-radius:10px;padding:16px 20px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;cursor:pointer" onclick="openModal('postRfpModal')">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:4px">New Project</div>
+        <div style="font-family:var(--serif);font-size:18px;color:#fff">Post an RFP to the marketplace</div>
+      </div>
+      <div style="width:40px;height:40px;border:1.5px solid rgba(255,255,255,.4);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="composer" id="composer">
+      <div class="composer-top">
+        <div class="composer-avatar" id="cmpAvatar" style="background:var(--sage)">?</div>
+        <textarea class="composer-textarea" id="cmpText" placeholder="Share an update, project insight or announcement…" rows="3" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      </div>
+      <div id="cmpMediaPreview" class="composer-media-preview"></div>
+      <div id="cmpRfpPicker" class="rfp-link-picker" style="display:none">
+        <label style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:6px">Link an RFP</label>
+        <select id="cmpRfpSel"><option value="">No RFP linked</option></select>
+      </div>
+      <div class="composer-bottom">
+        <button class="composer-tool" onclick="document.getElementById('cmpFileInp').click()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Photo
+        </button>
+        <button class="composer-tool" onclick="toggleRfpPicker()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Link RFP
+        </button>
+        <input type="file" id="cmpFileInp" accept="image/*" multiple style="display:none" onchange="handleMediaUpload(this)">
+        <button class="post-btn" id="postBtn" onclick="createPost()">Post</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="feed-filters">
+      <button class="ff on" onclick="setFeedFilter('all',this)">All</button>
+      <button class="ff" onclick="setFeedFilter('residential',this)">Residential</button>
+      <button class="ff" onclick="setFeedFilter('commercial',this)">Commercial</button>
+      <button class="ff" onclick="setFeedFilter('cultural',this)">Cultural</button>
+      <button class="ff" onclick="setFeedFilter('interior',this)">Interior</button>
+      <button class="ff" onclick="setFeedFilter('rfp',this)">RFPs Only</button>
+    </div>
+
+    <!-- Feed -->
+    <div id="feedList">
+      <div class="empty"><div class="empty-icon">◎</div>Loading your feed…</div>
+    </div>
+    <div id="loadMoreWrap" style="text-align:center;padding:16px;display:none">
+      <button style="padding:9px 24px;background:var(--w);border:1px solid var(--border2);color:var(--ink2);font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;border-radius:20px" onclick="loadMorePosts()">Load More</button>
+    </div>
+  </div>
+
+  <!-- ════ VIEW: MESSAGES ════ -->
+  <div class="view" id="view-messages">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div><div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--sage);margin-bottom:3px">Inbox</div><div style="font-family:var(--serif);font-size:22px;color:var(--ink)">Messages</div></div>
+      <button class="btn btn-p" onclick="openComposeModal()">+ New Message</button>
+    </div>
+    <div class="msg-layout" id="msgLayout">
+      <div class="msg-sidebar">
+        <div class="msg-sidebar-hd">
+          <div class="msg-sidebar-title">Conversations</div>
+        </div>
+        <div class="conv-list" id="convList">
+          <div class="empty" style="padding:24px">No messages yet</div>
+        </div>
+      </div>
+      <div class="msg-main" id="msgMain">
+        <div class="msg-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <div>Select a conversation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ VIEW: NOTIFICATIONS ════ -->
+  <div class="view" id="view-notifications">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div><div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--sage);margin-bottom:3px">Updates</div><div style="font-family:var(--serif);font-size:22px;color:var(--ink)">Notifications</div></div>
+      <button class="btn btn-g" onclick="markAllRead()">Mark All Read</button>
+    </div>
+    <div class="panel" id="notifPanel">
+      <div id="notifList"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- ════ VIEW: MY RFPs ════ -->
+  <div class="view" id="view-myrfps">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div><div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--sage);margin-bottom:3px">My Projects</div><div style="font-family:var(--serif);font-size:22px;color:var(--ink)">My RFPs</div></div>
+      <button class="btn btn-p" onclick="openModal('postRfpModal')">+ New RFP</button>
+    </div>
+    <div class="page-tabs">
+      <button class="ptab on" onclick="filterMyRfps('',this)">All</button>
+      <button class="ptab" onclick="filterMyRfps('draft',this)">Draft</button>
+      <button class="ptab" onclick="filterMyRfps('open',this)">Open</button>
+      <button class="ptab" onclick="filterMyRfps('in_review',this)">In Review</button>
+      <button class="ptab" onclick="filterMyRfps('awarded',this)">Awarded</button>
+      <button class="ptab" onclick="filterMyRfps('completed',this)">Completed</button>
+    </div>
+    <div id="myRfpList"><div class="empty">Loading…</div></div>
+  </div>
+
+  <!-- ════ VIEW: PROFILE ════ -->
+  <div class="view" id="view-profile">
+    <div class="profile-hd">
+      <div class="profile-cover"></div>
+      <div class="profile-hd-body">
+        <div class="profile-big-av" id="bigAv" style="background:var(--sage)">?</div>
+        <div class="profile-name-row">
+          <div>
+            <div class="profile-fullname" id="profName">Loading…</div>
+            <div class="profile-title" id="profTitle">—</div>
+          </div>
+          <button class="edit-btn" onclick="openEditProfile()">Edit Profile</button>
+        </div>
+        <div class="profile-bio" id="profBio"></div>
+        <div class="profile-stats-row">
+          <div class="profile-stat"><div class="profile-stat-val" id="profPosts">0</div><div class="profile-stat-lbl">Posts</div></div>
+          <div class="profile-stat"><div class="profile-stat-val" id="profRfps">0</div><div class="profile-stat-lbl">RFPs</div></div>
+          <div class="profile-stat"><div class="profile-stat-val" id="profViews">0</div><div class="profile-stat-lbl">Profile Views</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd"><div class="panel-ttl">Account Details</div></div>
+      <div class="panel-body">
+        <div class="w-row"><span>Email</span><span class="w-val" id="profEmail">—</span></div>
+        <div class="w-row"><span>Company / Studio</span><span class="w-val" id="profCompany">—</span></div>
+        <div class="w-row"><span>Location</span><span class="w-val" id="profLocation">—</span></div>
+        <div class="w-row"><span>Role</span><span class="w-val" id="profRole">—</span></div>
+        <div class="w-row"><span>Verified</span><span class="w-val" id="profVerified">—</span></div>
+        <div class="w-row"><span>Joined</span><span class="w-val" id="profJoined">—</span></div>
+        <div class="w-row"><span>Last Active</span><span class="w-val" id="profLastLogin">—</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hd"><div class="panel-ttl">Subscription</div></div>
+      <div class="panel-body">
+        <div class="w-row"><span>Plan</span><span class="w-val" id="profTier">—</span></div>
+        <div class="w-row"><span>Status</span><span class="w-val" id="profSubSt">—</span></div>
+        <div class="w-row"><span>Renews</span><span class="w-val" id="profSubEnd">—</span></div>
+      </div>
+      <div class="upgrade-box" id="upgradeBox" style="display:none">
+        <div class="ub-title">Upgrade to Pro</div>
+        <div class="ub-sub">Post unlimited RFPs, get priority listing and more.</div>
+        <button class="ub-btn" onclick="toast('Checkout coming soon!','inf')">Upgrade Now →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ VIEW: MEMBERS ════ -->
+  <!-- ════ VIEW: LIBRARY ════ -->
+  <div class="view" id="view-library">
+    <div style="margin-bottom:18px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--sage);margin-bottom:3px">Resource Hub</div>
+        <div style="font-family:var(--serif);font-size:22px;color:var(--ink)">Library</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ink4)">
+        <span id="libFileCount">0</span> files available
+      </div>
+    </div>
+    <!-- Category filter -->
+    <div class="lib-cats">
+      <button class="lib-cat on" onclick="filterLibrary('all',this)">All</button>
+      <button class="lib-cat" onclick="filterLibrary('catalogue',this)">📚 Catalogues</button>
+      <button class="lib-cat" onclick="filterLibrary('architectural',this)">🏛 Architectural</button>
+      <button class="lib-cat" onclick="filterLibrary('structural',this)">🏗 Structural</button>
+      <button class="lib-cat" onclick="filterLibrary('materials',this)">🧱 Materials</button>
+      <button class="lib-cat" onclick="filterLibrary('standards',this)">📋 Standards & Codes</button>
+    </div>
+    <!-- Search -->
+    <div class="panel" style="margin-bottom:14px;padding:10px 14px">
+      <input style="width:100%;background:var(--off2);border:1px solid var(--border);padding:8px 14px;font-family:var(--mono);font-size:12px;color:var(--ink);outline:none;border-radius:20px" placeholder="Search library…" oninput="searchLibrary(this.value)">
+    </div>
+    <!-- Files grid -->
+    <div class="lib-grid" id="libGrid">
+      <div class="lib-empty">Loading library…</div>
+    </div>
+  </div>
+
+  <div class="view" id="view-members">
+    <div style="margin-bottom:14px">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--sage);margin-bottom:3px">Directory</div>
+      <div style="font-family:var(--serif);font-size:22px;color:var(--ink)">Members</div>
+    </div>
+    <div class="panel" style="margin-bottom:12px;padding:12px 14px">
+      <input style="width:100%;background:var(--off2);border:1px solid var(--border);padding:9px 14px;font-family:var(--mono);font-size:12px;color:var(--ink);outline:none;border-radius:20px" placeholder="Search members by name or company…" oninput="filterMembers(this.value)">
+    </div>
+    <div class="member-grid" id="memberGrid"><div class="empty">Loading…</div></div>
+  </div>
+
+</main>
+
+<!-- RIGHT PANEL -->
+<aside class="rpanel">
+
+  <!-- Pro: suggested RFPs -->
+  <div class="widget" id="rProWidget">
+    <div class="widget-hd">Suggested RFPs</div>
+    <div class="widget-body" id="suggestedRfps"><div style="color:var(--ink4);font-family:var(--mono);font-size:11px">Loading…</div></div>
+  </div>
+
+  <!-- Client: pipeline -->
+  <div class="widget" id="rClientWidget" style="display:none">
+    <div class="widget-hd">My Pipeline</div>
+    <div class="widget-body">
+      <div class="w-row"><span>Draft</span><span class="w-val" id="wpDraft">0</span></div>
+      <div class="w-row"><span>Open</span><span class="w-val" id="wpOpen">0</span></div>
+      <div class="w-row"><span>In Review</span><span class="w-val" id="wpReview">0</span></div>
+      <div class="w-row"><span>Awarded</span><span class="w-val" id="wpAwarded">0</span></div>
+      <div class="w-row"><span>Completed</span><span class="w-val" id="wpCompleted">0</span></div>
+    </div>
+  </div>
+
+  <!-- Online now -->
+  <div class="widget">
+    <div class="widget-hd">Online Now · <span id="onlineCount" style="color:var(--sage)">—</span></div>
+    <div class="widget-body"><div class="online-members" id="onlineMembers"><div style="font-family:var(--mono);font-size:10px;color:var(--ink4)">Loading…</div></div></div>
+  </div>
+
+  <!-- Subscription -->
+  <div class="widget">
+    <div class="widget-hd">Your Plan</div>
+    <div class="widget-body">
+      <div class="w-row"><span>Tier</span><span class="w-val" id="wTier">—</span></div>
+      <div class="w-row"><span>Status</span><span class="w-val" id="wStatus">—</span></div>
+    </div>
+    <div class="upgrade-box" id="sideUpgrade" style="display:none">
+      <div class="ub-title">Go Pro</div>
+      <div class="ub-sub">Unlimited RFPs & priority listing.</div>
+      <button class="ub-btn" onclick="toast('Checkout coming soon!','inf')">Upgrade →</button>
+    </div>
+  </div>
+
+</aside>
+</div><!-- /layout -->
+
+<!-- POST RFP MODAL -->
+<div class="modal-ov" id="postRfpModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-hd"><div class="modal-title">Post a New RFP</div><button class="modal-x" onclick="closeModal('postRfpModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-row"><label class="modal-lbl">Title *</label><input class="modal-inp" id="rfpTitle" placeholder="e.g. Cultural Centre Renovation"></div>
+      <div class="modal-row"><label class="modal-lbl">Description *</label><textarea class="modal-ta" id="rfpDesc" placeholder="Describe scope, goals and requirements…"></textarea></div>
+      <div class="modal-grid">
+        <div class="modal-row"><label class="modal-lbl">Project Type *</label><input class="modal-inp" id="rfpType" placeholder="e.g. Residential"></div>
+        <div class="modal-row"><label class="modal-lbl">Currency</label><select class="modal-sel" id="rfpCur"><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="AED">AED</option><option value="TRY">TRY</option></select></div>
+      </div>
+      <div class="modal-grid">
+        <div class="modal-row"><label class="modal-lbl">Budget Min</label><input class="modal-inp" id="rfpBMin" type="number" placeholder="500000"></div>
+        <div class="modal-row"><label class="modal-lbl">Budget Max</label><input class="modal-inp" id="rfpBMax" type="number" placeholder="1500000"></div>
+      </div>
+      <div class="modal-grid">
+        <div class="modal-row"><label class="modal-lbl">Proposal Deadline *</label><input class="modal-inp" id="rfpDeadline" type="date"></div>
+        <div class="modal-row"><label class="modal-lbl">Location</label><input class="modal-inp" id="rfpLoc" placeholder="City, Country"></div>
+      </div>
+      <div class="modal-grid">
+        <div class="modal-row"><label class="modal-lbl">Privacy</label><select class="modal-sel" id="rfpPrivacy"><option value="public">Public</option><option value="private">Private</option><option value="invite_only">Invite Only</option></select></div>
+        <div class="modal-row"><label class="modal-lbl">Publish</label><select class="modal-sel" id="rfpStatus"><option value="draft">Save as Draft</option><option value="open">Publish Now</option></select></div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-g" onclick="closeModal('postRfpModal')">Cancel</button><button class="btn btn-p" onclick="submitRfp()">Post RFP</button></div>
+  </div>
+</div>
+
+<!-- COMPOSE MESSAGE MODAL -->
+<div class="modal-ov" id="composeModal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">New Message</div><button class="modal-x" onclick="closeModal('composeModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-row"><label class="modal-lbl">To *</label><select class="modal-sel" id="msgTo"><option value="">Select member…</option></select></div>
+      <div class="modal-row"><label class="modal-lbl">Subject</label><input class="modal-inp" id="msgSubject" placeholder="Message subject"></div>
+      <div class="modal-row"><label class="modal-lbl">Message *</label><textarea class="modal-ta" id="msgBody" style="min-height:120px" placeholder="Write your message…"></textarea></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-g" onclick="closeModal('composeModal')">Cancel</button><button class="btn btn-p" onclick="sendMessage()">Send</button></div>
+  </div>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-ov" id="editProfileModal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">Edit Profile</div><button class="modal-x" onclick="closeModal('editProfileModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-row"><label class="modal-lbl">Full Name</label><input class="modal-inp" id="epName"></div>
+      <div class="modal-grid">
+        <div class="modal-row"><label class="modal-lbl">Company / Studio</label><input class="modal-inp" id="epCompany"></div>
+        <div class="modal-row"><label class="modal-lbl">Location</label><input class="modal-inp" id="epLocation"></div>
+      </div>
+      <div class="modal-row"><label class="modal-lbl">Bio</label><textarea class="modal-ta" id="epBio" style="min-height:80px"></textarea></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-g" onclick="closeModal('editProfileModal')">Cancel</button><button class="btn btn-p" onclick="saveProfile()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- RFP DETAIL MODAL -->
+<div class="modal-ov" id="rfpDetailModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hd"><div class="modal-title" id="rfpDetailTitle">RFP Details</div><button class="modal-x" onclick="closeModal('rfpDetailModal')">✕</button></div>
+    <div class="modal-body" id="rfpDetailBody"></div>
+    <div class="modal-ft" id="rfpDetailFt"></div>
+  </div>
+</div>
+
+
+<!-- BOQ / PROPOSAL MODAL -->
+<div class="modal-ov" id="boqModal">
+  <div class="modal" style="max-width:660px">
+    <div class="modal-hd">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <div>
+        <div class="modal-title">Submit BOQ &amp; Proposal</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:2px" id="boqRfpLabel">Loading…</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('boqModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Cover Letter -->
+      <div class="modal-row">
+        <label class="modal-lbl">Cover Letter / Introduction *</label>
+        <textarea class="modal-ta" id="boqCover" style="min-height:100px" placeholder="Introduce your firm, explain your approach to this project, and why you are the best fit…"></textarea>
+      </div>
+      <!-- Proposed Budget -->
+      <div class="modal-grid">
+        <div class="modal-row">
+          <label class="modal-lbl">Your Proposed Budget *</label>
+          <input class="modal-inp" id="boqBudget" type="number" placeholder="e.g. 1200000">
+        </div>
+        <div class="modal-row">
+          <label class="modal-lbl">Currency</label>
+          <select class="modal-sel" id="boqCurrency">
+            <option value="USD">USD</option><option value="EUR">EUR</option>
+            <option value="GBP">GBP</option><option value="AED">AED</option><option value="TRY">TRY</option>
+          </select>
+        </div>
+      </div>
+      <!-- Timeline -->
+      <div class="modal-grid">
+        <div class="modal-row">
+          <label class="modal-lbl">Estimated Duration *</label>
+          <input class="modal-inp" id="boqDuration" placeholder="e.g. 18 months">
+        </div>
+        <div class="modal-row">
+          <label class="modal-lbl">Earliest Start Date</label>
+          <input class="modal-inp" id="boqStart" type="date">
+        </div>
+      </div>
+      <!-- BOQ Table -->
+      <div class="modal-row">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <label class="modal-lbl" style="margin:0">Bill of Quantities (BOQ)</label>
+          <button onclick="addBoqRow()" style="background:var(--sage5);border:1px solid rgba(30,77,58,.2);color:var(--sage);font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:4px 10px;cursor:pointer;border-radius:10px">+ Add Item</button>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--off2)">
+              <th style="padding:8px 12px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);text-align:left;border-bottom:1px solid var(--border)">Description</th>
+              <th style="padding:8px 10px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);text-align:right;border-bottom:1px solid var(--border);white-space:nowrap">Qty</th>
+              <th style="padding:8px 10px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);text-align:right;border-bottom:1px solid var(--border)">Unit</th>
+              <th style="padding:8px 10px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);text-align:right;border-bottom:1px solid var(--border);white-space:nowrap">Unit Price</th>
+              <th style="padding:8px 10px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);text-align:right;border-bottom:1px solid var(--border)">Total</th>
+              <th style="padding:8px 6px;border-bottom:1px solid var(--border)"></th>
+            </tr></thead>
+            <tbody id="boqRows"></tbody>
+            <tfoot><tr style="background:var(--off2)">
+              <td colspan="4" style="padding:9px 12px;font-family:var(--mono);font-size:10px;color:var(--ink2);font-weight:600;text-align:right;border-top:1px solid var(--border)">TOTAL</td>
+              <td style="padding:9px 10px;font-family:var(--mono);font-size:12px;color:var(--sage);font-weight:600;text-align:right;border-top:1px solid var(--border)" id="boqTotal">—</td>
+              <td style="border-top:1px solid var(--border)"></td>
+            </tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <!-- Relevant experience -->
+      <div class="modal-row">
+        <label class="modal-lbl">Relevant Experience & Portfolio</label>
+        <textarea class="modal-ta" id="boqExperience" placeholder="List relevant completed projects, awards, and any specific experience relevant to this RFP…"></textarea>
+      </div>
+      <!-- Team -->
+      <div class="modal-row">
+        <label class="modal-lbl">Proposed Team</label>
+        <textarea class="modal-ta" id="boqTeam" style="min-height:70px" placeholder="Lead architect, project manager, key consultants and sub-contractors…"></textarea>
+      </div>
+      <!-- Additional notes -->
+      <div class="modal-row">
+        <label class="modal-lbl">Additional Notes / Conditions</label>
+        <textarea class="modal-ta" id="boqNotes" style="min-height:70px" placeholder="Payment terms, exclusions, value engineering options, etc."></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-g" onclick="closeModal('boqModal')">Cancel</button>
+      <button class="btn btn-g" onclick="saveBoqDraft()">💾 Save Draft</button>
+      <button class="btn btn-p" onclick="submitBoq()">📤 Submit Proposal</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE FULLSCREEN -->
+<div id="imgModal" onclick="this.classList.remove('on')">
+  <img id="imgModalSrc" src="" alt="">
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const API='https://buildconnect-pro-api.onrender.com/api/v1';
+let tok=localStorage.getItem('bcp_tok')||'';
+let me=null;
+let allPosts=[],allRfps=[],myRfps=[],allUsers=[],inbox=[],notifs=[];
+let postPage=1,feedFilter='all';
+let activeConvUser=null;
+let pendingMedia=[]; // {file, previewUrl, uploaded_url}
+
+/* ── GUARD ── */
+if(!tok){window.location.href='buildconnect-home.html';}
+
+/* ════ BOOT ════
+   Render free tier needs 60-90s to cold-start.
+   We wait patiently — no AbortController, no redirecting away on errors.
+   If server returns HTML (still booting) → show message + retry.
+   If network error → retry every 10s.
+   Only redirect to home on 401 (truly expired token).
+══════════════════════════════════════════ */
+
+let _bootElapsed = 0;
+let _bootTickTimer = null;
+let _bootRetries = 0;
+const _BOOT_MAX_RETRIES = 20; // ~3 min max before giving up and redirecting to login
+
+function _showBootMsg(line1, line2) {
+  let el = document.getElementById('_bootOverlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_bootOverlay';
+    el.style.cssText = [
+      'position:fixed','inset:0','z-index:99999',
+      'background:#f8f9f6','display:flex','flex-direction:column',
+      'align-items:center','justify-content:center','gap:14px',
+      'font-family:DM Sans,sans-serif'
+    ].join(';');
+    el.innerHTML = [
+      '<div style="width:40px;height:40px;border:3px solid #e8ebe4;border-top-color:#1e4d3a;',
+      'border-radius:50%;animation:_bspin .9s linear infinite"></div>',
+      '<style>@keyframes _bspin{to{transform:rotate(360deg)}}</style>',
+      '<div id="_bl1" style="font-size:15px;font-weight:600;color:#2c342f"></div>',
+      '<div id="_bl2" style="font-size:12px;color:#9aada6;text-align:center;',
+      'max-width:280px;line-height:1.7;font-family:Geist Mono,monospace"></div>',
+      '<div style="width:220px;height:3px;background:#e8ebe4;border-radius:2px;overflow:hidden">',
+      '<div id="_bbar" style="height:100%;background:#1e4d3a;width:0;transition:width .8s ease"></div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(el);
+  }
+  document.getElementById('_bl1').textContent = line1 || '';
+  document.getElementById('_bl2').textContent = line2 || '';
+}
+
+function _updateBootBar(pct) {
+  const el = document.getElementById('_bbar');
+  if (el) el.style.width = pct + '%';
+}
+
+function _hideBootOverlay() {
+  const el = document.getElementById('_bootOverlay');
+  if (el) el.remove();
+  if (_bootTickTimer) { clearInterval(_bootTickTimer); _bootTickTimer = null; }
+}
+
+function _startBootTick() {
+  _bootElapsed = 0;
+  if (_bootTickTimer) clearInterval(_bootTickTimer);
+  _bootTickTimer = setInterval(() => {
+    _bootElapsed++;
+    const pct = _bootElapsed < 10 ? (_bootElapsed * 4) : Math.min(90, 40 + (_bootElapsed - 10) * 0.6);
+    _updateBootBar(pct);
+    if (_bootElapsed < 5)       _showBootMsg('Starting up…', 'Connecting to server…');
+    else if (_bootElapsed < 20) _showBootMsg('Server is waking up…', 'Render servers sleep after inactivity — usually takes about 60 seconds on first load.');
+    else if (_bootElapsed < 50) _showBootMsg('Still loading… (' + _bootElapsed + 's)', 'Almost there — server is booting up.');
+    else if (_bootElapsed < 80) _showBootMsg('Hang tight… (' + _bootElapsed + 's)', 'Taking a little longer than usual.');
+    else                         _showBootMsg('Nearly there… (' + _bootElapsed + 's)', 'Still waiting for the server. Try reloading if this persists.');
+  }, 1000);
+}
+
+let _booting = false;
+async function boot() {
+  if (_booting) return;
+  _booting = true;
+  _bootRetries++;
+  _showBootMsg('Starting up…', 'Connecting to server…');
+  _startBootTick();
+
+  // ── No token → go to login ──────────────────────────────────────
+  if (!tok) {
+    _hideBootOverlay();
+    window.location.href = 'buildconnect-home.html';
+    return;
+  }
+
+  // ── Too many retries → give up, force re-login ──────────────────
+  if (_bootRetries > _BOOT_MAX_RETRIES) {
+    _hideBootOverlay();
+    localStorage.removeItem('bcp_tok');
+    window.location.href = 'buildconnect-home.html';
+    return;
+  }
+
+  try {
+    const r = await fetch(API + '/auth/me', {
+      headers: { Authorization: 'Bearer ' + tok }
+    });
+
+    // 401 = token expired or invalid → re-login
+    if (r.status === 401) {
+      _hideBootOverlay();
+      localStorage.removeItem('bcp_tok');
+      window.location.href = 'buildconnect-home.html';
+      return;
+    }
+
+    // 403 / 404 → don't loop, go back to login
+    if (r.status === 403 || r.status === 404) {
+      _hideBootOverlay();
+      localStorage.removeItem('bcp_tok');
+      window.location.href = 'buildconnect-home.html';
+      return;
+    }
+
+    // Server returned HTML (Render cold-starting) → retry patiently
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('json')) {
+      _booting = false;
+      _showBootMsg('Server is waking up…', `Render servers sleep after inactivity — usually takes 30–60s.\nRetrying… (${_bootRetries}/${_BOOT_MAX_RETRIES})`);
+      setTimeout(boot, 5000);
+      return;
+    }
+
+    // Parse JSON safely
+    let d;
+    try { d = await r.json(); } catch (je) {
+      _booting = false;
+      _showBootMsg('Unexpected response', `Retrying in 5 seconds… (${_bootRetries})`);
+      setTimeout(boot, 5000);
+      return;
+    }
+
+    // Support all common /auth/me response shapes:
+    // { data: { user: {...} } }   <- extension format
+    // { user: {...} }             <- some auth routes
+    // { success:true, data:{id} } <- another pattern
+    const userObj = d?.data?.user || d?.user || (d?.data?.id ? d.data : null);
+
+    // Error response - retry up to 5 times then give up
+    if (!r.ok || !userObj || !userObj.id) {
+      if (_bootRetries >= 5) {
+        _hideBootOverlay();
+        localStorage.removeItem('bcp_tok');
+        window.location.href = 'buildconnect-home.html';
+        return;
+      }
+      _booting = false;
+      _showBootMsg('Issue loading profile', 'Retrying in 8 seconds... (' + _bootRetries + ')');
+      setTimeout(boot, 8000);
+      return;
+    }
+
+    // SUCCESS
+    _hideBootOverlay();
+    _bootRetries = 0;
+    _booting = false;
+    me = userObj;
+
+    if (me.role === 'admin') {
+      localStorage.setItem('bcp_admin_tok', tok);
+      window.location.href = 'buildconnect-admin.html';
+      return;
+    }
+
+    setupUI();
+    startHeartbeat();
+    await Promise.allSettled([
+      loadFeed(), loadInbox(), loadNotifications(), loadOnline(),
+      me.role === 'client' ? loadMyRfps() : loadAllRfps()
+    ]);
+    loadMembers();
+
+  } catch (e) {
+    // Network / DNS / CORS error → retry with growing backoff
+    _booting = false;
+    const isNetErr = (e.name === 'TypeError' || e.message.includes('Load failed') || e.message.includes('fetch') || e.message.includes('NetworkError'));
+    const waitSec  = Math.min(30, 5 + _bootRetries * 2);
+    const msg = isNetErr
+      ? `Network error — check your internet connection.\nRetrying in ${waitSec}s… (${_bootRetries}/${_BOOT_MAX_RETRIES})`
+      : `${e.message} — retrying in ${waitSec}s…`;
+    _showBootMsg('Connection problem', msg);
+    setTimeout(boot, waitSec * 1000);
+  }
+}
+
+function setupUI(){
+  const isPro=me.role==='professional';
+  const col=isPro?'var(--sage)':'var(--rust)';
+  const init=(me.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+
+  // Topnav
+  document.getElementById('tnavInit').textContent=init;
+  document.getElementById('tnavAvatar').style.background=col;
+  document.getElementById('rolePill').className=`role-pill ${isPro?'pro':'cli'}`;
+  document.getElementById('roleDot').style.background=col;
+  document.getElementById('roleLabel').textContent=isPro?'Professional':'Client';
+
+  // Sidebar
+  document.getElementById('psAvatar').textContent=init;
+  document.getElementById('psAvatar').style.background=col;
+  document.getElementById('psName').textContent=me.name;
+  document.getElementById('psTagline').textContent=me.company||me.email;
+  document.getElementById('psCompany').textContent=me.location||'';
+  const tierCol={free:'var(--ink4)',monthly:'var(--sage)',annual:'var(--sage2)'};
+  document.getElementById('subDot').style.background=tierCol[me.subscription_tier]||'var(--ink4)';
+  document.getElementById('subLabel').textContent=ucFirst(me.subscription_tier||'free')+' Plan';
+
+  // Composer
+  document.getElementById('cmpAvatar').textContent=init;
+  document.getElementById('cmpAvatar').style.background=col;
+  document.getElementById('bigAv').textContent=init;
+  document.getElementById('bigAv').style.background=col;
+
+  // Role-specific
+  if(isPro){
+    document.getElementById('rProWidget').style.display='block';
+    document.getElementById('rClientWidget').style.display='none';
+  } else {
+    document.getElementById('rProWidget').style.display='none';
+    document.getElementById('rClientWidget').style.display='flex';
+    document.getElementById('rClientWidget').style.flexDirection='column';
+    document.getElementById('myRfpsNav').style.display='flex';
+    document.getElementById('clientCta').style.display='flex';
+  }
+
+  // Right widgets
+  document.getElementById('wTier').innerHTML=subBadge(me.subscription_tier);
+  document.getElementById('wStatus').innerHTML=subStatusBadge(me.subscription_status);
+  if(me.subscription_tier==='free'){document.getElementById('sideUpgrade').style.display='block';document.getElementById('upgradeBox').style.display='block';}
+
+  // Profile page
+  document.getElementById('profName').textContent=me.name;
+  document.getElementById('profTitle').textContent=`${ucFirst(me.role)} · ${me.company||'Independent'}`;
+  document.getElementById('profBio').textContent=me.bio||'';
+  document.getElementById('profEmail').textContent=me.email;
+  document.getElementById('profCompany').textContent=me.company||'—';
+  document.getElementById('profLocation').textContent=me.location||'—';
+  document.getElementById('profRole').innerHTML=roleBadge(me.role);
+  document.getElementById('profVerified').innerHTML=me.is_verified?'<span class="badge b-green">Verified</span>':'<span class="badge b-gray">Pending</span>';
+  document.getElementById('profJoined').textContent=fmtDate(me.createdAt);
+  document.getElementById('profLastLogin').textContent=me.last_login_at?fmtDate(me.last_login_at):'Now';
+  document.getElementById('profTier').innerHTML=subBadge(me.subscription_tier);
+  document.getElementById('profSubSt').innerHTML=subStatusBadge(me.subscription_status);
+  document.getElementById('profSubEnd').textContent=me.subscription_end?fmtDate(me.subscription_end):'—';
+
+  // Edit profile defaults
+  document.getElementById('epName').value=me.name||'';
+  document.getElementById('epCompany').value=me.company||'';
+  document.getElementById('epLocation').value=me.location||'';
+  document.getElementById('epBio').value=me.bio||'';
+}
+
+/* ════ NAVIGATION ════ */
+function goView(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.lnav-item').forEach(b=>b.classList.remove('on'));
+  const el=document.getElementById(`view-${view}`);
+  if(el)el.classList.add('on');
+  document.querySelectorAll('.lnav-item').forEach(b=>{if(b.getAttribute('onclick')?.includes(`'${view}'`))b.classList.add('on');});
+  if(view==='messages')refreshMessages();
+  if(view==='notifications')loadNotifications();
+  if(view==='myrfps')renderMyRfps(myRfps);
+  if(view==='library' && !allLibFiles.length)loadLibrary();
+}
+
+/* ════ HEARTBEAT ════ */
+function startHeartbeat(){
+  const beat=()=>fetch(`${API}/online/heartbeat`,{method:'POST',headers:{Authorization:`Bearer ${tok}`}}).catch(()=>{});
+  beat();setInterval(beat,25000);
+  // Poll online count live every 30 seconds
+  setInterval(loadOnline, 30000);
+}
+
+/* ════ ONLINE ════ */
+async function loadOnline(){
+  try{
+    const d=await GET('/online/count');
+    document.getElementById('onlineCount').textContent=d?.data?.count??'—';
+    // Show avatar row
+    const od=await GET('/admin/online').catch(()=>null);
+    if(od?.data?.sessions){
+      document.getElementById('onlineMembers').innerHTML=od.data.sessions.slice(0,12).map(s=>{
+        const u=s.user||{};const init=(u.name||'?').charAt(0).toUpperCase();const col=avatarColor(u.name||'?');
+        return `<div class="online-av" style="background:${col}" title="${x(u.name||'?')}">${init}</div>`;
+      }).join('')||'<div style="font-family:var(--mono);font-size:10px;color:var(--ink4)">No one online yet</div>';
+    }
+  }catch(e){document.getElementById('onlineCount').textContent='—';}
+}
+
+/* ════ FEED ════ */
+async function loadFeed(){
+  try{
+    const d=await GET(`/posts?page=1&limit=10`);
+    allPosts=d?.data?.posts||[];
+    postPage=1;
+    renderFeed(allPosts);
+    document.getElementById('loadMoreWrap').style.display=allPosts.length>=10?'block':'none';
+    document.getElementById('psPostCount').textContent=allPosts.filter(p=>p.author_id===me.id).length;
+    // Populate RFP picker in composer
+    populateCmpRfpSel();
+  }catch(e){
+    document.getElementById('feedList').innerHTML='<div class="empty"><div class="empty-icon">◎</div>Feed unavailable — add the backend extension to enable posts.</div>';
+  }
+}
+
+async function loadMorePosts(){
+  postPage++;
+  try{
+    const d=await GET(`/posts?page=${postPage}&limit=10`);
+    const more=d?.data?.posts||[];
+    allPosts=[...allPosts,...more];
+    renderFeed(allPosts);
+    if(more.length<10)document.getElementById('loadMoreWrap').style.display='none';
+  }catch(e){}
+}
+
+function setFeedFilter(f,btn){
+  feedFilter=f;
+  document.querySelectorAll('.ff').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  let shown=allPosts;
+  if(f==='rfp')shown=allPosts.filter(p=>p.rfp_id);
+  else if(f!=='all')shown=allPosts.filter(p=>p.body?.toLowerCase().includes(f)||p.author?.company?.toLowerCase().includes(f));
+  renderFeed(shown);
+}
+
+function renderFeed(posts){
+  if(!posts.length){document.getElementById('feedList').innerHTML='<div class="empty"><div class="empty-icon">◎</div>No posts yet. Be the first to share something!</div>';return;}
+  document.getElementById('feedList').innerHTML=posts.map(p=>postCard(p)).join('');
+}
+
+function postCard(p){
+  const author=p.author||{};const aName=author.name||'Unknown';const col=avatarColor(aName);
+  const init=aName.charAt(0).toUpperCase();
+  const isOwn=p.author_id===me.id;
+  const liked=(p.likes||[]).includes(me.id);
+  const imgs=(p.media||[]).filter(m=>m.type==='image');
+  const cols=['c1','c2','c3'];const gridCls=cols[Math.min(imgs.length,3)-1]||'c1';
+  return `<div class="post-card" id="post-${p.id}">
+    <div class="pc-top">
+      <div class="pc-avatar" style="background:${col}" onclick="viewMemberProfile('${author.id||''}')">${init}</div>
+      <div class="pc-meta">
+        <div class="pc-name" onclick="viewMemberProfile('${author.id||''}')">${x(aName)}</div>
+        <div class="pc-sub">${x(author.company||ucFirst(author.role||''))}</div>
+        <div class="pc-badge-row">${roleBadge(author.role||'')} ${subBadge(author.subscription_tier||'free')}</div>
+      </div>
+      <div class="pc-time">${fmtDate(p.createdAt)}${p.is_pinned?' <span class="pc-pin">📌</span>':''}</div>
+    </div>
+    <div class="pc-body">${x(p.body)}</div>
+    ${p.rfp_id?`<div class="pc-rfp" onclick="openRfpDetail('${p.rfp_id}')"><div class="pc-rfp-label">Linked RFP</div><div class="pc-rfp-title">View Project →</div></div>`:''}
+    ${imgs.length?`<div class="pc-media ${gridCls}">${imgs.map(m=>`<img src="${m.url.startsWith('http')?m.url:API.replace('/api/v1','')+m.url}" alt="" onerror="this.parentElement.style.display='none'" onclick="openImg(this.src)">`).join('')}</div>`:''}
+    <div class="pc-bottom">
+      <button class="pc-action ${liked?'liked':''}" onclick="likePost('${p.id}',${liked})">
+        <svg viewBox="0 0 24 24" fill="${liked?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span class="pc-like-count">${(p.likes||[]).length}</span>
+      </button>
+      <button class="pc-action" onclick="toggleComments('${p.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        ${(p.comments||[]).length}
+      </button>
+      <button class="pc-action" onclick="msgAuthor('${author.id}','${x(aName).replace(/'/g,"\\'")}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Message
+      </button>
+      <div class="pc-more">
+        ${isOwn?`<button class="pc-delete" onclick="deletePost('${p.id}')">Delete</button>`:''}
+      </div>
+    </div>
+    <div class="comments-section" id="comments-${p.id}" style="display:none">
+      <div class="comment-compose">
+        <div class="comment-avatar" style="background:${avatarColor(me.name||'?')}">${(me.name||'?').charAt(0).toUpperCase()}</div>
+        <input class="comment-inp" id="cinp-${p.id}" placeholder="Write a comment…" onkeydown="if(event.key==='Enter')submitComment('${p.id}')">
+        <button class="comment-submit" onclick="submitComment('${p.id}')">Post</button>
+      </div>
+      <div id="clist-${p.id}">
+        ${(p.comments||[]).map(c=>`
+          <div class="comment-item">
+            <div class="comment-avatar" style="background:${avatarColor(c.author?.name||'?')}">${(c.author?.name||'?').charAt(0).toUpperCase()}</div>
+            <div class="comment-body">
+              <div class="comment-name">${x(c.author?.name||'?')}</div>
+              <div class="comment-text">${x(c.body)}</div>
+              <div class="comment-time">${fmtDate(c.createdAt)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleComments(pid){
+  const el=document.getElementById(`comments-${pid}`);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+async function likePost(id,liked){
+  try{
+    const d=await POST(`/posts/${id}/like`,{});
+    const post=allPosts.find(p=>p.id===id);
+    if(post){
+      if(liked)post.likes=(post.likes||[]).filter(uid=>uid!==me.id);
+      else post.likes=[...(post.likes||[]),me.id];
+      renderFeed(allPosts);
+    }
+  }catch(e){toast('Action failed','err');}
+}
+
+async function submitComment(pid){
+  const inp=document.getElementById(`cinp-${pid}`);
+  const body=inp.value.trim();if(!body)return;
+  try{
+    const d=await POST(`/posts/${pid}/comments`,{body});
+    const comment=d?.data?.comment;
+    const clist=document.getElementById(`clist-${pid}`);
+    const aName=me.name||'?';
+    clist.insertAdjacentHTML('beforeend',`<div class="comment-item"><div class="comment-avatar" style="background:${avatarColor(aName)}">${aName.charAt(0).toUpperCase()}</div><div class="comment-body"><div class="comment-name">${x(aName)}</div><div class="comment-text">${x(body)}</div><div class="comment-time">Just now</div></div></div>`);
+    inp.value='';
+    const post=allPosts.find(p=>p.id===pid);
+    if(post)post.comments=[...(post.comments||[]),{author:{name:me.name,role:me.role},body,createdAt:new Date()}];
+  }catch(e){toast('Could not post comment','err');}
+}
+
+async function deletePost(id){
+  if(!confirm('Delete this post?'))return;
+  try{await DEL(`/posts/${id}`);allPosts=allPosts.filter(p=>p.id!==id);renderFeed(allPosts);toast('Post deleted','ok');}
+  catch(e){toast(e.message,'err');}
+}
+
+/* ════ COMPOSER ════ */
+function toggleRfpPicker(){
+  const el=document.getElementById('cmpRfpPicker');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function populateCmpRfpSel(){
+  const sel=document.getElementById('cmpRfpSel');
+  const rfps=me.role==='client'?myRfps:allRfps.filter(r=>r.status==='open');
+  sel.innerHTML='<option value="">No RFP linked</option>'+rfps.slice(0,20).map(r=>`<option value="${r.id}">${x(r.title)}</option>`).join('');
+}
+
+async function handleMediaUpload(input){
+  const files=Array.from(input.files);
+  files.forEach(f=>{
+    const url=URL.createObjectURL(f);
+    pendingMedia.push({file:f,previewUrl:url,uploaded_url:null});
+  });
+  renderMediaPreview();
+}
+
+function renderMediaPreview(){
+  document.getElementById('cmpMediaPreview').innerHTML=pendingMedia.map((m,i)=>`
+    <div class="cmp-img"><img src="${m.previewUrl}"><button class="cmp-img-rm" onclick="removeMedia(${i})">✕</button></div>`).join('');
+}
+
+function removeMedia(i){pendingMedia.splice(i,1);renderMediaPreview();}
+
+async function createPost(){
+  const body=document.getElementById('cmpText').value.trim();
+  if(!body){toast('Write something first','err');return;}
+  const rfp_id=document.getElementById('cmpRfpSel').value||null;
+  const btn=document.getElementById('postBtn');
+  btn.disabled=true;btn.textContent='Posting…';
+
+  let media=[];
+  // Upload files if any
+  if(pendingMedia.length){
+    try{
+      const fd=new FormData();
+      pendingMedia.forEach(m=>fd.append('files',m.file));
+      const r=await fetch(`${API}/posts/upload`,{method:'POST',headers:{Authorization:`Bearer ${tok}`},body:fd});
+      if(r.ok){
+        const d=await r.json();
+        media=d?.data?.files||[];
+        if(!media.length){toast('Image upload not enabled yet — post will be text only','inf');}
+      } else {
+        toast('Image upload not enabled — posting text only','inf');
+      }
+    }catch(e){toast('Image upload unavailable — posting text only','inf');}
+  }
+
+  try{
+    const d=await POST('/posts',{body,media,rfp_id});
+    const post={...d?.data?.post,author:{id:me.id,name:me.name,company:me.company,role:me.role,subscription_tier:me.subscription_tier},likes:[],comments:[]};
+    allPosts.unshift(post);
+    renderFeed(allPosts);
+    document.getElementById('cmpText').value='';
+    document.getElementById('cmpText').style.height='auto';
+    pendingMedia=[];renderMediaPreview();
+    document.getElementById('cmpRfpPicker').style.display='none';
+    document.getElementById('psPostCount').textContent=parseInt(document.getElementById('psPostCount').textContent||0)+1;
+    toast('Post shared!','ok');
+  }catch(e){toast(e.message,'err');}
+  btn.disabled=false;btn.textContent='Post';
+}
+
+/* ════ MESSAGES ════ */
+async function loadInbox(){
+  try{
+    const d=await GET('/messages/inbox');
+    inbox=d?.data?.messages||[];
+    const unread=inbox.filter(m=>!m.is_read).length;
+    if(unread>0){
+      document.getElementById('msgDot').classList.add('show');
+      document.getElementById('msgBadge').style.display='flex';
+      document.getElementById('msgBadge').textContent=unread;
+    }
+    renderConvList();
+  }catch(e){}
+}
+
+function renderConvList(){
+  const seen=new Set();const convs=[];
+  [...inbox].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).forEach(m=>{
+    const other=m.sender_id===me.id?m.receiver:m.sender;
+    if(!other)return;
+    if(!seen.has(other.id)){seen.add(other.id);convs.push({user:other,lastMsg:m});}
+  });
+  document.getElementById('convList').innerHTML=convs.length?convs.map(c=>{
+    const col=avatarColor(c.user.name||'?');const init=(c.user.name||'?').charAt(0).toUpperCase();
+    const unread=inbox.filter(m=>m.sender_id===c.user.id&&!m.is_read).length;
+    return `<div class="conv-item ${activeConvUser?.id===c.user.id?'on':''}" onclick="openConv('${c.user.id}')">
+      <div class="conv-avatar" style="background:${col}">${init}</div>
+      <div class="conv-info">
+        <div class="conv-name">${x(c.user.name)}</div>
+        <div class="conv-preview">${x(c.lastMsg.subject||c.lastMsg.body?.slice(0,50))}</div>
+        <div class="conv-time">${fmtDate(c.lastMsg.createdAt)}</div>
+      </div>
+      ${unread?'<div class="conv-unread"></div>':''}
+    </div>`;
+  }).join(''):'<div class="empty" style="padding:24px">No conversations yet.<br>Start one with + New Message.</div>';
+}
+
+async function refreshMessages(){
+  await loadInbox();
+  if(activeConvUser)openConv(activeConvUser.id);
+}
+
+async function openConv(userId){
+  activeConvUser=allUsers.find(u=>u.id===userId)||inbox.find(m=>m.sender_id===userId||m.receiver_id===userId)?.sender||inbox.find(m=>m.sender_id===userId||m.receiver_id===userId)?.receiver||{id:userId,name:'Member'};
+  renderConvList();
+  const msgs=inbox.filter(m=>(m.sender_id===userId||m.receiver_id===userId));
+  await Promise.all(msgs.filter(m=>!m.is_read&&m.receiver_id===me.id).map(m=>PUT(`/messages/${m.id}/read`,{})));
+  const u=activeConvUser;const col=avatarColor(u.name||'?');const init=(u.name||'?').charAt(0).toUpperCase();
+  document.getElementById('msgMain').innerHTML=`
+    <div class="msg-main-hd">
+      <div class="msg-main-avatar" style="background:${col}">${init}</div>
+      <div><div class="msg-main-name">${x(u.name||'Member')}</div><div class="msg-main-role">${x(u.role||'')}</div></div>
+    </div>
+    <div class="msg-thread" id="msgThread">
+      ${msgs.sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt)).map(m=>{
+        const mine=m.sender_id===me.id;
+        return `<div><div class="msg-bubble ${mine?'mine':'theirs'}">
+          ${m.subject?`<div class="msg-bubble-subj">${x(m.subject)}</div>`:''}
+          ${x(m.body)}
+          <div class="msg-bubble-meta">${fmtDate(m.createdAt)}</div>
+        </div></div>`;
+      }).join('')}
+    </div>
+    <div class="msg-input-row">
+      <textarea class="msg-textarea" id="msgReplyText" placeholder="Type a reply…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply();}"></textarea>
+      <button class="msg-send-btn" onclick="sendReply()">Send</button>
+    </div>`;
+  // Scroll to bottom
+  setTimeout(()=>{const t=document.getElementById('msgThread');if(t)t.scrollTop=t.scrollHeight;},50);
+}
+
+async function sendReply(){
+  const body=document.getElementById('msgReplyText')?.value.trim();
+  if(!body||!activeConvUser)return;
+  try{
+    await POST('/messages',{receiver_id:activeConvUser.id,body});
+    inbox.push({id:Date.now().toString(),sender_id:me.id,receiver_id:activeConvUser.id,body,is_read:false,createdAt:new Date(),sender:{id:me.id,name:me.name},receiver:activeConvUser});
+    openConv(activeConvUser.id);
+    toast('Sent','ok');
+  }catch(e){toast(e.message,'err');}
+}
+
+function openComposeModal(){
+  populateUserSelect('msgTo');
+  openModal('composeModal');
+}
+
+async function sendMessage(){
+  const to=document.getElementById('msgTo').value;
+  const subject=document.getElementById('msgSubject').value;
+  const body=document.getElementById('msgBody').value;
+  if(!to||!body){toast('Recipient and message required','err');return;}
+  try{
+    await POST('/messages',{receiver_id:to,subject,body});
+    toast('Message sent!','ok');closeModal('composeModal');
+    document.getElementById('msgBody').value='';document.getElementById('msgSubject').value='';
+    await loadInbox();
+  }catch(e){toast(e.message,'err');}
+}
+
+function msgAuthor(userId,name){
+  if(!userId||userId==='undefined')return;
+  goView('messages');
+  setTimeout(()=>{activeConvUser={id:userId,name};openComposeModal();document.getElementById('msgTo').value=userId;},100);
+}
+
+/* ════ NOTIFICATIONS ════ */
+async function loadNotifications(){
+  try{
+    const d=await GET('/notifications');
+    notifs=d?.data?.notifications||[];
+    const unread=d?.data?.unread||0;
+    if(unread>0){document.getElementById('notifDot').classList.add('show');document.getElementById('notifBadge').style.display='flex';}
+    renderNotifs();
+  }catch(e){document.getElementById('notifList').innerHTML='<div class="empty">Notifications unavailable — add backend extension.</div>';}
+}
+
+function renderNotifs(){
+  const icons={message:'💬',like:'❤️',comment:'💬',rfp:'📄',system:'🔔',ban:'⛔'};
+  document.getElementById('notifList').innerHTML=notifs.length?notifs.map(n=>`
+    <div class="notif-item ${n.is_read?'':'unread'}">
+      <div class="notif-icon" style="background:${n.is_read?'var(--off2)':'var(--sage4)'}">${icons[n.type]||'🔔'}</div>
+      <div class="notif-body">
+        <div class="notif-title">${x(n.title)}</div>
+        ${n.body?`<div class="notif-text">${x(n.body)}</div>`:''}
+        <div class="notif-time">${fmtDate(n.createdAt)}</div>
+      </div>
+    </div>`).join(''):'<div class="empty"><div class="empty-icon">🔔</div>No notifications yet</div>';
+}
+
+async function markAllRead(){
+  try{
+    await PUT('/notifications/read-all',{});
+    notifs=notifs.map(n=>({...n,is_read:true}));
+    renderNotifs();
+    document.getElementById('notifDot').classList.remove('show');
+    document.getElementById('notifBadge').style.display='none';
+    toast('All notifications read','ok');
+  }catch(e){}
+}
+
+/* ════ MY RFPs ════ */
+async function loadMyRfps(){
+  try{
+    const d=await GET('/rfps/my');
+    myRfps=d?.data?.rfps||d?.data||[];
+    document.getElementById('myRfpBadge').textContent=myRfps.length;
+    document.getElementById('psRfpCount').textContent=myRfps.length;
+    document.getElementById('profRfps').textContent=myRfps.length;
+    renderMyRfps(myRfps);
+    updatePipeline(myRfps);
+    populateCmpRfpSel();
+  }catch(e){}
+}
+
+async function loadAllRfps(){
+  try{
+    const d=await GET('/rfps');
+    allRfps=d?.data?.rfps||d?.data||[];
+    document.getElementById('profRfps').textContent=0;
+    buildSuggestedRfps(allRfps);
+  }catch(e){}
+}
+
+function renderMyRfps(rfps){
+  if(!rfps.length){document.getElementById('myRfpList').innerHTML='<div class="empty"><div class="empty-icon">◎</div>No RFPs yet. Post your first project!</div>';return;}
+  document.getElementById('myRfpList').innerHTML=rfps.map(r=>{
+    const bud=r.budget_min&&r.budget_max?`$${fmtK(r.budget_min)}–$${fmtK(r.budget_max)} ${r.currency||'USD'}`:'—';
+    return `<div class="rfp-card" onclick="openRfpDetail('${r.id}')">
+      <div class="rfp-card-top">
+        <div class="rfp-card-title">${x(r.title)}</div>
+        ${statusBadge(r.status)}
+      </div>
+      <div class="rfp-card-meta">${x(r.project_type||'—')} · Deadline ${fmtDate(r.proposal_deadline)}</div>
+      <div class="rfp-card-bottom">
+        <div class="rfp-meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>${bud}</div>
+        <div class="rfp-meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${r.view_count||0} views</div>
+        ${privacyBadge(r.privacy_level)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterMyRfps(status,btn){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+  renderMyRfps(status?myRfps.filter(r=>r.status===status):myRfps);
+}
+
+function updatePipeline(rfps){
+  const c={draft:0,open:0,in_review:0,awarded:0,completed:0};
+  rfps.forEach(r=>{if(c[r.status]!==undefined)c[r.status]++;});
+  document.getElementById('wpDraft').textContent=c.draft;
+  document.getElementById('wpOpen').textContent=c.open;
+  document.getElementById('wpReview').textContent=c.in_review;
+  document.getElementById('wpAwarded').textContent=c.awarded;
+  document.getElementById('wpCompleted').textContent=c.completed;
+}
+
+async function submitRfp(){
+  const title=document.getElementById('rfpTitle').value.trim();
+  const desc=document.getElementById('rfpDesc').value.trim();
+  const type=document.getElementById('rfpType').value.trim();
+  const deadline=document.getElementById('rfpDeadline').value;
+  if(!title||!desc||!type||!deadline){toast('Fill in all required fields','err');return;}
+  try{
+    const d=await POST('/rfps',{title,description:desc,project_type:type,proposal_deadline:deadline,
+      currency:document.getElementById('rfpCur').value,
+      budget_min:parseFloat(document.getElementById('rfpBMin').value)||null,
+      budget_max:parseFloat(document.getElementById('rfpBMax').value)||null,
+      privacy_level:document.getElementById('rfpPrivacy').value,
+      status:document.getElementById('rfpStatus').value,
+      location:document.getElementById('rfpLoc').value||undefined});
+    toast('RFP posted!','ok');closeModal('postRfpModal');
+    ['rfpTitle','rfpDesc','rfpType','rfpDeadline','rfpBMin','rfpBMax','rfpLoc'].forEach(id=>document.getElementById(id).value='');
+    await loadMyRfps();
+  }catch(e){toast(e.message,'err');}
+}
+
+/* ════ RFP DETAIL ════ */
+async function openRfpDetail(id){
+  const rfp=[...myRfps,...allRfps].find(r=>r.id===id);
+  if(!rfp){try{const d=await GET(`/rfps/${id}`);openRfpDetailWith(d?.data?.rfp||d?.data);}catch(e){}return;}
+  openRfpDetailWith(rfp);
+}
+
+function openRfpDetailWith(r){
+  if(!r)return;
+  const isOwn=r.client_id===me.id;const isPro=me.role==='professional';
+  document.getElementById('rfpDetailTitle').textContent=r.title;
+  document.getElementById('rfpDetailBody').innerHTML=`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${statusBadge(r.status)} ${privacyBadge(r.privacy_level)} ${r.featured?'<span class="badge b-gold">Featured</span>':''}</div>
+    <div class="modal-row"><label class="modal-lbl">Description</label><div style="font-size:13px;color:var(--ink2);line-height:1.7">${x(r.description||'No description provided.')}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><label class="modal-lbl">Type</label><div style="font-size:13px">${x(r.project_type||'—')}</div></div>
+      <div><label class="modal-lbl">Budget</label><div style="font-size:13px;font-family:var(--mono)">${r.budget_min?'$'+fmtK(r.budget_min):''} ${r.budget_max?'– $'+fmtK(r.budget_max):''} ${r.currency||'USD'}</div></div>
+      <div><label class="modal-lbl">Deadline</label><div style="font-size:13px;font-family:var(--mono)">${fmtDate(r.proposal_deadline)}</div></div>
+      <div><label class="modal-lbl">Views</label><div style="font-size:13px;font-family:var(--mono)">${r.view_count||0}</div></div>
+      ${r.location?`<div><label class="modal-lbl">Location</label><div style="font-size:13px">${x(typeof r.location==='object'?r.location.city||'':r.location)}</div></div>`:''}
+    </div>
+    ${r.industry?.length?`<div class="modal-row" style="margin-top:12px"><label class="modal-lbl">Industry</label><div style="font-size:12px">${r.industry.join(' · ')}</div></div>`:''}`;
+  // Store current RFP id for BOQ form
+  window._currentRfpId = r.id;
+  window._currentRfpTitle = r.title;
+  document.getElementById('rfpDetailFt').innerHTML=
+    isPro&&r.status==='open'?`<button class="btn btn-g" onclick="closeModal('rfpDetailModal')">Close</button><button class="btn btn-p" onclick="openBoqModal('${r.id}','${x(r.title||'').replace(/'/g,"\\'")}')">📋 Submit BOQ / Proposal</button>`:
+    isOwn?`<button class="btn btn-g" onclick="closeModal('rfpDetailModal')">Close</button>
+      ${r.status==='draft'?`<button class="btn btn-p" onclick="publishRfp('${r.id}')">Publish RFP</button>`:''}
+      ${r.status==='open'?`<button class="btn btn-p" onclick="viewProposals('${r.id}','${(r.title||'').replace(/'/g,"\\'")}')">📋 View Proposals</button>`:''}
+      ${r.status==='open'?`<button class="btn btn-r" onclick="closeRfp('${r.id}')">Close RFP</button>`:''}`:
+    `<button class="btn btn-g" onclick="closeModal('rfpDetailModal')">Close</button>`;
+  openModal('rfpDetailModal');
+}
+
+async function publishRfp(id){
+  try{const d=await fetch(`${API}/rfps/${id}/publish`,{method:'POST',headers:{Authorization:`Bearer ${tok}`}});toast('RFP published!','ok');closeModal('rfpDetailModal');await loadMyRfps();}
+  catch(e){toast(e.message,'err');}
+}
+async function closeRfp(id){
+  try{await fetch(`${API}/rfps/${id}/close`,{method:'POST',headers:{Authorization:`Bearer ${tok}`}});toast('RFP closed','ok');closeModal('rfpDetailModal');await loadMyRfps();}
+  catch(e){toast(e.message,'err');}
+}
+
+async function viewProposals(rfpId, rfpTitle){
+  closeModal('rfpDetailModal');
+  document.getElementById('proposalsModalTitle').textContent='Proposals for: '+rfpTitle;
+  document.getElementById('proposalsList').innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--ink4);padding:20px 0">Loading proposals...</div>';
+  openModal('proposalsModal');
+  try{
+    const d=await GET('/rfps/'+rfpId+'/proposals');
+    const proposals=d?.data?.proposals||[];
+    if(!proposals.length){
+      document.getElementById('proposalsList').innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--ink4);padding:20px 0;text-align:center">No proposals submitted yet.</div>';
+      return;
+    }
+    document.getElementById('proposalsList').innerHTML=proposals.map(p=>{
+      const prof=p.professional||{};
+      return `<div class="proposal-card" style="border:1px solid var(--border2);border-radius:10px;padding:16px;margin-bottom:12px;background:var(--off2);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-weight:600;font-size:13px">${x(prof.name||'Professional')}</div>
+            <div style="font-size:11px;font-family:var(--mono);color:var(--ink4)">${x(prof.company||prof.role||'')}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--mono);font-size:13px;color:var(--sage);font-weight:600">${p.currency||'USD'} ${Number(p.proposed_budget||0).toLocaleString()}</div>
+            <div style="font-size:10px;font-family:var(--mono);color:var(--ink4)">${x(p.estimated_duration||'')}</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--ink2);margin-bottom:10px;line-height:1.6">${x((p.cover_letter||'').slice(0,200))}${(p.cover_letter||'').length>200?'…':''}</div>
+        ${p.boq_items&&p.boq_items.length?`<div style="font-size:10px;font-family:var(--mono);color:var(--ink4);margin-bottom:8px">📋 BOQ: ${p.boq_items.length} line items — Total: ${p.currency||'USD'} ${Number(p.boq_total||0).toLocaleString()}</div>`:''}
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-g" style="font-size:11px;padding:7px 14px" onclick="openProposalDetail(${JSON.stringify(JSON.stringify(p)).slice(1,-1)})">View Full Proposal</button>
+          <button class="btn btn-p" style="font-size:11px;padding:7px 14px" onclick="messageUser('${prof.id||''}','${x(prof.name||'')}')">💬 Message</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    document.getElementById('proposalsList').innerHTML='<div style="color:var(--red);font-size:12px;padding:20px 0">'+e.message+'</div>';
+  }
+}
+
+function openProposalDetail(proposalJson){
+  try{
+    const p=JSON.parse(proposalJson);
+    const prof=p.professional||{};
+    document.getElementById('proposalDetailTitle').textContent='Full Proposal — '+(prof.name||'Professional');
+    document.getElementById('proposalDetailBody').innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div><label class="modal-lbl">Professional</label><div style="font-size:13px">${x(prof.name||'—')}</div></div>
+        <div><label class="modal-lbl">Company</label><div style="font-size:13px">${x(prof.company||'—')}</div></div>
+        <div><label class="modal-lbl">Proposed Budget</label><div style="font-size:13px;font-family:var(--mono);color:var(--sage);font-weight:600">${p.currency||'USD'} ${Number(p.proposed_budget||0).toLocaleString()}</div></div>
+        <div><label class="modal-lbl">Duration</label><div style="font-size:13px;font-family:var(--mono)">${x(p.estimated_duration||'—')}</div></div>
+        ${p.start_date?`<div><label class="modal-lbl">Start Date</label><div style="font-size:13px;font-family:var(--mono)">${fmtDate(p.start_date)}</div></div>`:''}
+        <div><label class="modal-lbl">Status</label><div style="font-size:13px">${statusBadge(p.status||'submitted')}</div></div>
+      </div>
+      <div class="modal-row"><label class="modal-lbl">Cover Letter</label><div style="font-size:13px;color:var(--ink2);line-height:1.7;white-space:pre-wrap">${x(p.cover_letter||'—')}</div></div>
+      ${p.relevant_experience?`<div class="modal-row"><label class="modal-lbl">Relevant Experience</label><div style="font-size:13px;color:var(--ink2);line-height:1.7">${x(p.relevant_experience)}</div></div>`:''}
+      ${p.proposed_team?`<div class="modal-row"><label class="modal-lbl">Proposed Team</label><div style="font-size:13px;color:var(--ink2);line-height:1.7">${x(p.proposed_team)}</div></div>`:''}
+      ${p.notes?`<div class="modal-row"><label class="modal-lbl">Notes</label><div style="font-size:13px;color:var(--ink2);line-height:1.7">${x(p.notes)}</div></div>`:''}
+      ${p.boq_items&&p.boq_items.length?`
+        <div class="modal-row">
+          <label class="modal-lbl">Bill of Quantities</label>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
+            <thead><tr style="border-bottom:1px solid var(--border2)">
+              <th style="text-align:left;padding:6px;font-family:var(--mono);font-size:10px;color:var(--ink4)">DESCRIPTION</th>
+              <th style="text-align:right;padding:6px;font-family:var(--mono);font-size:10px;color:var(--ink4)">QTY</th>
+              <th style="text-align:right;padding:6px;font-family:var(--mono);font-size:10px;color:var(--ink4)">UNIT</th>
+              <th style="text-align:right;padding:6px;font-family:var(--mono);font-size:10px;color:var(--ink4)">UNIT PRICE</th>
+              <th style="text-align:right;padding:6px;font-family:var(--mono);font-size:10px;color:var(--ink4)">TOTAL</th>
+            </tr></thead>
+            <tbody>${(p.boq_items||[]).map(item=>`
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:8px 6px">${x(item.desc||'')}</td>
+                <td style="padding:8px 6px;text-align:right;font-family:var(--mono)">${item.qty||0}</td>
+                <td style="padding:8px 6px;text-align:right;font-family:var(--mono)">${x(item.unit||'')}</td>
+                <td style="padding:8px 6px;text-align:right;font-family:var(--mono)">${Number(item.unitPrice||0).toLocaleString()}</td>
+                <td style="padding:8px 6px;text-align:right;font-family:var(--mono);font-weight:600">${Number((item.qty||0)*(item.unitPrice||0)).toLocaleString()}</td>
+              </tr>`).join('')}
+            </tbody>
+            <tfoot><tr style="border-top:2px solid var(--border2)">
+              <td colspan="4" style="padding:10px 6px;font-weight:700;font-family:var(--mono)">TOTAL</td>
+              <td style="padding:10px 6px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--sage)">${p.currency||'USD'} ${Number(p.boq_total||0).toLocaleString()}</td>
+            </tr></tfoot>
+          </table>
+        </div>`:''}
+    `;
+    openModal('proposalDetailModal');
+  }catch(e){toast('Could not open proposal','err');}
+}
+
+function messageUser(userId, userName){
+  closeModal('proposalsModal');
+  closeModal('proposalDetailModal');
+  document.getElementById('newMsgTo').value=userId;
+  document.getElementById('newMsgSubject').value='Re: Your proposal';
+  openModal('newMsgModal');
+  // Populate select if it exists
+  const sel=document.getElementById('newMsgTo');
+  if(sel&&sel.tagName==='SELECT'){
+    populateUserSelect('newMsgTo').then(()=>{sel.value=userId;});
+  }
+}
+
+/* ════ SUGGESTED RFPs (Pro) ════ */
+function buildSuggestedRfps(rfps){
+  const open=rfps.filter(r=>r.status==='open').slice(0,5);
+  document.getElementById('suggestedRfps').innerHTML=open.length?open.map(r=>`
+    <div class="suggested-item" onclick="openRfpDetail('${r.id}')">
+      <div class="si-avatar" style="background:${avatarColor(r.title||'?')}">${projectIcon(r.project_type)}</div>
+      <div><div class="si-title">${x(r.title)}</div><div class="si-sub">${x(r.project_type||'—')} · ${r.budget_min?'$'+fmtK(r.budget_min):'Budget TBD'}</div></div>
+    </div>`).join(''):'<div style="font-family:var(--mono);font-size:10px;color:var(--ink4)">No open RFPs yet</div>';
+}
+
+/* ════ MEMBERS ════ */
+async function loadMembers(){
+  if(allUsers.length)return;
+  try{
+    // Use the dedicated /members endpoint
+    const d=await GET('/members?limit=100');
+    allUsers=d?.data?.members||[];
+    // Also merge in any authors we already know from posts
+    if(!allUsers.length){
+      const pd=await GET('/posts?limit=50');
+      const posts=pd?.data?.posts||[];
+      const seen=new Set();
+      allUsers=posts.map(p=>p.author).filter(a=>a&&!seen.has(a.id)&&seen.add(a.id));
+    }
+    renderMembers(allUsers);
+  }catch(e){document.getElementById('memberGrid').innerHTML='<div class="empty">Members directory unavailable.</div>';}
+}
+
+function renderMembers(users){
+  if(!users.length){document.getElementById('memberGrid').innerHTML='<div class="empty">No members found.</div>';return;}
+  document.getElementById('memberGrid').innerHTML=users.map(u=>`
+    <div class="member-card" onclick="viewMemberProfile('${u.id}')">
+      <div class="mc-avatar" style="background:${avatarColor(u.name||'?')}">${(u.name||'?').charAt(0).toUpperCase()}</div>
+      <div class="mc-name">${x(u.name||'—')}</div>
+      ${u.company?`<div class="mc-company">${x(u.company)}</div>`:''}
+      <div style="margin-bottom:8px">${roleBadge(u.role||'')}</div>
+      ${u.id!==me.id?`<button class="mc-msg-btn" onclick="event.stopPropagation();msgAuthor('${u.id}','${x(u.name||'').replace(/'/g,"\\'")}')">Message</button>`:''}
+    </div>`).join('');
+}
+
+function filterMembers(q){
+  q=q.toLowerCase();
+  renderMembers(allUsers.filter(u=>u.name?.toLowerCase().includes(q)||u.company?.toLowerCase().includes(q)));
+}
+
+function viewMemberProfile(id){
+  if(!id||id==='undefined')return;
+  const u=allUsers.find(u=>u.id===id);
+  if(!u)return;
+  // Quick preview in a toast / future: full profile view
+  toast(`Viewing ${u.name}'s profile feature coming soon!`,'inf');
+}
+
+/* ════ PROFILE EDIT ════ */
+function openEditProfile(){openModal('editProfileModal');}
+async function saveProfile(){
+  const btn=event?.target;if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    // Try both common endpoint patterns
+    let r=await fetch(`${API}/auth/updateMe`,{method:'PUT',headers:{Authorization:`Bearer ${tok}`,'Content-Type':'application/json'},
+      body:JSON.stringify({name:document.getElementById('epName').value,company:document.getElementById('epCompany').value,location:document.getElementById('epLocation').value,bio:document.getElementById('epBio').value})});
+    // Fallback: try /auth/me
+    if(r.status===404){
+      r=await fetch(`${API}/auth/me`,{method:'PUT',headers:{Authorization:`Bearer ${tok}`,'Content-Type':'application/json'},
+        body:JSON.stringify({name:document.getElementById('epName').value,company:document.getElementById('epCompany').value,location:document.getElementById('epLocation').value,bio:document.getElementById('epBio').value})});
+    }
+    const d=await r.json();
+    if(!r.ok)throw new Error(d?.error?.message||'Update failed');
+    me={...me,...(d?.data?.user||d?.data||{name:document.getElementById('epName').value,company:document.getElementById('epCompany').value,location:document.getElementById('epLocation').value,bio:document.getElementById('epBio').value})};
+    setupUI();closeModal('editProfileModal');toast('Profile updated successfully','ok');
+  }catch(e){toast('Profile update: '+e.message,'err');}
+  if(btn){btn.disabled=false;btn.textContent='Save Changes';}
+}
+
+/* ════ GLOBAL SEARCH ════ */
+function globalSearch(q){
+  if(!q){return;}
+  const postMatches=allPosts.filter(p=>p.body?.toLowerCase().includes(q.toLowerCase())||p.author?.name?.toLowerCase().includes(q.toLowerCase()));
+  if(postMatches.length){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+    document.getElementById('view-feed').classList.add('on');
+    renderFeed(postMatches);
+  }
+}
+
+/* ════ USER SELECT HELPERS ════ */
+async function populateUserSelect(id){
+  try{
+    // Always refresh members list for messaging
+    await loadMembers();
+    const sel=document.getElementById(id);
+    // Merge inbox contacts
+    const contacts=new Map();
+    inbox.forEach(m=>{
+      const other=m.sender_id===me.id?m.receiver:m.sender;
+      if(other&&!contacts.has(other.id))contacts.set(other.id,other);
+    });
+    allUsers.forEach(u=>{if(!contacts.has(u.id))contacts.set(u.id,u);});
+    sel.innerHTML='<option value="">Select member…</option>'+[...contacts.values()].filter(u=>u.id!==me.id).map(u=>`<option value="${u.id}">${x(u.name)} (${x(u.email||u.role||'')})</option>`).join('');
+  }catch(e){}
+}
+
+/* ════ IMAGE VIEWER ════ */
+function openImg(src){document.getElementById('imgModalSrc').src=src;document.getElementById('imgModal').classList.add('on');}
+
+/* ════ LIBRARY ════ */
+let allLibFiles = [];
+let libCategory = 'all';
+let libSearch   = '';
+
+async function loadLibrary(){
+  try{
+    const d = await GET('/library');
+    allLibFiles = d?.data?.files || [];
+    document.getElementById('libFileCount').textContent = allLibFiles.length;
+    renderLibrary();
+  }catch(e){
+    document.getElementById('libGrid').innerHTML = '<div class="lib-empty">Could not load library.</div>';
+  }
+}
+
+function renderLibrary(){
+  const isPro = me.subscription_tier === 'monthly' || me.subscription_tier === 'annual' || me.role === 'admin';
+  let files = allLibFiles;
+  if(libCategory !== 'all') files = files.filter(f => f.category === libCategory);
+  if(libSearch) files = files.filter(f =>
+    (f.title||'').toLowerCase().includes(libSearch) ||
+    (f.description||'').toLowerCase().includes(libSearch)
+  );
+  document.getElementById('libFileCount').textContent = files.length;
+  if(!files.length){
+    document.getElementById('libGrid').innerHTML = '<div class="lib-empty">No files in this category yet.</div>';
+    return;
+  }
+  const icons = { catalogue:'📚', architectural:'🏛', structural:'🏗', materials:'🧱', standards:'📋' };
+  document.getElementById('libGrid').innerHTML = files.map(f => {
+    const icon  = icons[f.category] || '📄';
+    const dlBtn = isPro
+      ? `<a class="lib-dl" href="${f.url}" target="_blank" download="${x(f.title)}">
+           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+           Download
+           ${f.size?`<span class="lib-size">${f.size}</span>`:''}
+         </a>`
+      : `<div class="lib-lock">🔒 Pro members only</div>
+         <button class="lib-dl locked" style="margin-top:8px" onclick="toast('Upgrade to Pro to download files','inf')">Locked</button>`;
+    return `<div class="lib-card">
+      <div class="lib-icon">${icon}</div>
+      <div class="lib-title">${x(f.title)}</div>
+      <div class="lib-meta">${ucFirst(f.category||'general')} · ${f.filetype||'PDF'} ${f.size?'· '+f.size:''}</div>
+      <div class="lib-desc">${x(f.description||'')}</div>
+      ${dlBtn}
+    </div>`;
+  }).join('');
+}
+
+function filterLibrary(cat, btn){
+  libCategory = cat;
+  document.querySelectorAll('.lib-cat').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderLibrary();
+}
+
+function searchLibrary(q){
+  libSearch = q.toLowerCase();
+  renderLibrary();
+}
+
+/* ════ AUTH / LOGOUT ════ */
+function doLogout(){localStorage.removeItem('bcp_tok');window.location.href='buildconnect-home.html';}
+
+/* ════ API ════ */
+async function GET(path){
+  const r=await fetch(`${API}${path}`,{headers:{Authorization:`Bearer ${tok}`}});
+  if(r.status===401){doLogout();throw new Error('Session expired');}
+  const d=await r.json();
+  if(!r.ok)throw new Error(d?.error?.message||`HTTP ${r.status}`);
+  return d;
+}
+async function POST(path,body){
+  const r=await fetch(`${API}${path}`,{method:'POST',headers:{Authorization:`Bearer ${tok}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();if(!r.ok)throw new Error(d?.error?.message||'Error');return d;
+}
+async function PUT(path,body){
+  const r=await fetch(`${API}${path}`,{method:'PUT',headers:{Authorization:`Bearer ${tok}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();if(!r.ok)throw new Error(d?.error?.message||'Error');return d;
+}
+async function DEL(path){
+  const r=await fetch(`${API}${path}`,{method:'DELETE',headers:{Authorization:`Bearer ${tok}`}});
+  const d=await r.json();if(!r.ok)throw new Error(d?.error?.message||'Error');return d;
+}
+
+/* ════ MODALS ════ */
+function openModal(id){document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('on');}));
+
+/* ════ TOAST ════ */
+function toast(msg,type='inf'){
+  const wrap=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${type==='ok'?'✓':type==='err'?'✕':'·'}</span><span>${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{el.style.cssText='opacity:0;transition:.25s;';setTimeout(()=>el.remove(),260);},4000);
+}
+
+/* ════ BADGE HELPERS ════ */
+function roleBadge(r){
+  if(r==='admin')        return '<span class="badge b-amber">👑 Admin</span>';
+  if(r==='professional') return '<span class="badge b-sage">Professional</span>';
+  if(r==='client')       return '<span class="badge b-rust">Client</span>';
+  return '<span class="badge b-gray">'+(r||'—')+'</span>';
+}
+function statusBadge(s){const m={open:'b-green',draft:'b-gray',in_review:'b-blue',awarded:'b-amber',completed:'b-sage',cancelled:'b-red'};return `<span class="badge ${m[s]||'b-gray'}">${(s||'—').replace('_',' ')}</span>`;}
+function privacyBadge(p){const m={public:'b-green',private:'b-amber',invite_only:'b-blue'};return `<span class="badge ${m[p]||'b-gray'}">${(p||'—').replace('_',' ')}</span>`;}
+function subBadge(t){
+  if(t==='annual')  return '<span class="badge b-gold">⭐ Annual Pro</span>';
+  if(t==='monthly') return '<span class="badge b-sage">✦ Monthly Pro</span>';
+  return '<span class="badge b-gray">Free</span>';
+}
+function subStatusBadge(s){const m={active:'b-green',cancelled:'b-red',expired:'b-amber'};return `<span class="badge ${m[s]||'b-gray'}">${s||'—'}</span>`;}
+function projectIcon(type){const t=(type||'').toLowerCase();if(t.includes('cultural')||t.includes('museum'))return'🏛';if(t.includes('commercial'))return'🏢';if(t.includes('residential'))return'🏠';if(t.includes('hotel'))return'🏨';if(t.includes('interior'))return'🛋';if(t.includes('urban'))return'🗺';return'📐';}
+
+/* ════ FORMAT ════ */
+function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch{return'—';}}
+function fmtK(n){n=parseFloat(n)||0;if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';if(n>=1000)return(n/1000).toFixed(0)+'K';return n.toFixed(0);}
+function ucFirst(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s;}
+function x(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function avatarColor(name){const cols=['#1e4d3a','#2a6650','#c24a1e','#b07820','#2050a0','#5a3080','#30607a'];let h=0;for(let i=0;i<(name||'').length;i++)h=(h*31+name.charCodeAt(i))%cols.length;return cols[Math.abs(h)];}
+
+
+/* ════ BOQ / PROPOSAL ════ */
+let boqRowCount=0;
+let boqItems=[];
+let boqCurrentRfpId=null;
+
+function openBoqModal(rfpId, rfpTitle){
+  boqCurrentRfpId=rfpId;
+  document.getElementById('boqRfpLabel').textContent='For: '+rfpTitle;
+  closeModal('rfpDetailModal');
+  // Reset form
+  document.getElementById('boqCover').value='';
+  document.getElementById('boqBudget').value='';
+  document.getElementById('boqDuration').value='';
+  document.getElementById('boqStart').value='';
+  document.getElementById('boqExperience').value='';
+  document.getElementById('boqTeam').value='';
+  document.getElementById('boqNotes').value='';
+  boqItems=[];boqRowCount=0;
+  // Add 3 starter rows
+  addBoqRow('Schematic Design Phase','1','Lump Sum','',0);
+  addBoqRow('Design Development','1','Lump Sum','',0);
+  addBoqRow('Construction Documentation','1','Lump Sum','',0);
+  // Load saved draft if any
+  const draft=localStorage.getItem('boq_draft_'+rfpId);
+  if(draft){try{const d=JSON.parse(draft);if(d.cover)document.getElementById('boqCover').value=d.cover;if(d.budget)document.getElementById('boqBudget').value=d.budget;if(d.duration)document.getElementById('boqDuration').value=d.duration;if(d.experience)document.getElementById('boqExperience').value=d.experience;if(d.team)document.getElementById('boqTeam').value=d.team;if(d.notes)document.getElementById('boqNotes').value=d.notes;}catch(e){}}
+  openModal('boqModal');
+}
+
+function addBoqRow(desc='',qty='1',unit='m²',unitPrice='',total=0){
+  const id=++boqRowCount;
+  const tbody=document.getElementById('boqRows');
+  const tr=document.createElement('tr');
+  tr.id='boq-row-'+id;
+  tr.style.borderBottom='1px solid var(--border)';
+  tr.innerHTML=`
+    <td style="padding:6px 8px"><input style="width:100%;border:1px solid var(--border);background:var(--off2);padding:5px 8px;font-family:var(--sans);font-size:12px;color:var(--ink);outline:none;border-radius:3px" placeholder="Description" value="${x(desc)}" oninput="updateBoqRow(${id})"></td>
+    <td style="padding:6px 6px;width:60px"><input style="width:100%;border:1px solid var(--border);background:var(--off2);padding:5px 6px;font-family:var(--mono);font-size:11px;text-align:right;color:var(--ink);outline:none;border-radius:3px" type="number" placeholder="1" value="${qty}" oninput="updateBoqRow(${id})"></td>
+    <td style="padding:6px 6px;width:80px"><select style="width:100%;border:1px solid var(--border);background:var(--off2);padding:5px 4px;font-family:var(--mono);font-size:10px;color:var(--ink);outline:none;border-radius:3px" onchange="updateBoqRow(${id})"><option ${unit==='m²'?'selected':''}>m²</option><option ${unit==='m³'?'selected':''}>m³</option><option ${unit==='m'?'selected':''}>m</option><option ${unit==='No.'?'selected':''}>No.</option><option ${unit==='Lump Sum'?'selected':''}>Lump Sum</option><option ${unit==='Week'?'selected':''}>Week</option><option ${unit==='Month'?'selected':''}>Month</option><option ${unit==='Hour'?'selected':''}>Hour</option></select></td>
+    <td style="padding:6px 6px;width:100px"><input style="width:100%;border:1px solid var(--border);background:var(--off2);padding:5px 6px;font-family:var(--mono);font-size:11px;text-align:right;color:var(--ink);outline:none;border-radius:3px" type="number" placeholder="0.00" value="${unitPrice}" oninput="updateBoqRow(${id})"></td>
+    <td style="padding:6px 8px;width:100px;font-family:var(--mono);font-size:11px;color:var(--sage);text-align:right" id="boq-total-${id}">—</td>
+    <td style="padding:6px 6px;text-align:center"><button onclick="removeBoqRow(${id})" style="background:none;border:none;cursor:pointer;color:var(--ink4);font-size:14px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">✕</button></td>`;
+  tbody.appendChild(tr);
+  boqItems.push({id,desc,qty,unit,unitPrice});
+  if(unitPrice)updateBoqRow(id);
+}
+
+function updateBoqRow(id){
+  const tr=document.getElementById('boq-row-'+id);if(!tr)return;
+  const inputs=tr.querySelectorAll('input,select');
+  const desc=inputs[0].value;const qty=parseFloat(inputs[1].value)||0;const unit=inputs[2].value;const up=parseFloat(inputs[3].value)||0;
+  const total=qty*up;
+  const totalCell=document.getElementById('boq-total-'+id);
+  totalCell.textContent=total?fmtCurrency(total):'—';
+  const item=boqItems.find(i=>i.id===id);
+  if(item){item.desc=desc;item.qty=qty;item.unit=unit;item.unitPrice=up;item.total=total;}
+  updateBoqGrandTotal();
+}
+
+function removeBoqRow(id){
+  document.getElementById('boq-row-'+id)?.remove();
+  boqItems=boqItems.filter(i=>i.id!==id);
+  updateBoqGrandTotal();
+}
+
+function updateBoqGrandTotal(){
+  const total=boqItems.reduce((s,i)=>s+(i.total||0),0);
+  document.getElementById('boqTotal').textContent=total?fmtCurrency(total):'—';
+  if(total&&!document.getElementById('boqBudget').value){
+    document.getElementById('boqBudget').value=Math.round(total);
+  }
+}
+
+function fmtCurrency(n){
+  const sel=document.getElementById('boqCurrency');
+  const cur=sel?sel.value:'USD';
+  return new Intl.NumberFormat('en-US',{style:'currency',currency:cur,maximumFractionDigits:0}).format(n);
+}
+
+function saveBoqDraft(){
+  if(!boqCurrentRfpId)return;
+  const draft={
+    cover:document.getElementById('boqCover').value,
+    budget:document.getElementById('boqBudget').value,
+    duration:document.getElementById('boqDuration').value,
+    experience:document.getElementById('boqExperience').value,
+    team:document.getElementById('boqTeam').value,
+    notes:document.getElementById('boqNotes').value,
+    items:boqItems,
+    savedAt:new Date().toISOString()
+  };
+  localStorage.setItem('boq_draft_'+boqCurrentRfpId,JSON.stringify(draft));
+  toast('Draft saved locally','ok');
+}
+
+async function submitBoq(){
+  const cover=document.getElementById('boqCover').value.trim();
+  const budget=document.getElementById('boqBudget').value;
+  const duration=document.getElementById('boqDuration').value.trim();
+  if(!cover){toast('Cover letter is required','err');document.getElementById('boqCover').focus();return;}
+  if(!budget){toast('Proposed budget is required','err');document.getElementById('boqBudget').focus();return;}
+  if(!duration){toast('Estimated duration is required','err');document.getElementById('boqDuration').focus();return;}
+
+  const proposal={
+    rfp_id:boqCurrentRfpId,
+    cover_letter:cover,
+    proposed_budget:parseFloat(budget),
+    currency:document.getElementById('boqCurrency').value,
+    estimated_duration:duration,
+    start_date:document.getElementById('boqStart').value||null,
+    relevant_experience:document.getElementById('boqExperience').value,
+    proposed_team:document.getElementById('boqTeam').value,
+    notes:document.getElementById('boqNotes').value,
+    boq_items:boqItems.filter(i=>i.desc).map(i=>({description:i.desc,quantity:i.qty,unit:i.unit,unit_price:i.unitPrice,total:i.total||0})),
+    boq_total:boqItems.reduce((s,i)=>s+(i.total||0),0),
+    submitted_at:new Date().toISOString()
+  };
+
+  // Try to submit to API; if endpoint not yet available, send via message to client
+  try{
+    const r=await fetch(`${API}/rfps/${boqCurrentRfpId}/proposals`,{
+      method:'POST',
+      headers:{Authorization:`Bearer ${tok}`,'Content-Type':'application/json'},
+      body:JSON.stringify(proposal)
+    });
+    if(r.ok){
+      toast('Proposal submitted successfully!','ok');
+      localStorage.removeItem('boq_draft_'+boqCurrentRfpId);
+      closeModal('boqModal');
+      return;
+    }
+  }catch(e){}
+
+  // Fallback: send as a message to the client via messaging API
+  // Find the client from the RFP
+  const rfp=[...myRfps,...allRfps].find(r=>r.id===boqCurrentRfpId);
+  const clientId=rfp?.client_id;
+  
+  if(clientId){
+    try{
+      const msgBody=formatProposalAsMessage(proposal);
+      await POST('/messages',{
+        receiver_id:clientId,
+        subject:`Proposal for: ${window._currentRfpTitle||'Your RFP'}`,
+        body:msgBody
+      });
+      toast('Proposal sent to client via message!','ok');
+      localStorage.removeItem('boq_draft_'+boqCurrentRfpId);
+      closeModal('boqModal');
+      return;
+    }catch(e){}
+  }
+
+  // Final fallback: save locally and show confirmation
+  saveBoqDraft();
+  toast('Proposal saved locally — messaging will be available once backend extension is installed','inf');
+  closeModal('boqModal');
+}
+
+function formatProposalAsMessage(p){
+  let msg=`═══════════════════════════════════
+PROPOSAL / BOQ SUBMISSION
+═══════════════════════════════════
+
+From: ${me.name} — ${me.company||'Independent'}
+Submitted: ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}
+
+COVER LETTER
+─────────────
+${p.cover_letter}
+
+PROPOSED BUDGET: ${new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency,maximumFractionDigits:0}).format(p.proposed_budget)}
+ESTIMATED DURATION: ${p.estimated_duration}`;
+
+  if(p.start_date)msg+=`
+EARLIEST START: ${p.start_date}`;
+
+  if(p.boq_items&&p.boq_items.length){
+    msg+=`
+
+BILL OF QUANTITIES
+─────────────`;
+    p.boq_items.forEach((item,i)=>{
+      msg+=`
+${i+1}. ${item.description}`;
+      if(item.unit_price)msg+=`
+   ${item.quantity} ${item.unit} × ${item.unit_price} = ${new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency,maximumFractionDigits:0}).format(item.total)}`;
+    });
+    msg+=`
+
+BOQ TOTAL: ${new Intl.NumberFormat('en-US',{style:'currency',currency:p.currency,maximumFractionDigits:0}).format(p.boq_total)}`;
+  }
+
+  if(p.relevant_experience)msg+=`
+
+RELEVANT EXPERIENCE
+─────────────
+${p.relevant_experience}`;
+  if(p.proposed_team)msg+=`
+
+PROPOSED TEAM
+─────────────
+${p.proposed_team}`;
+  if(p.notes)msg+=`
+
+ADDITIONAL NOTES
+─────────────
+${p.notes}`;
+  msg+=`
+
+═══════════════════════════════════
+To respond, reply to this message.
+═══════════════════════════════════`;
+  return msg;
+}
+
+/* ── INIT ── */
+boot();
+</script>
+<!-- ── PROPOSALS LIST MODAL ── -->
+<div class="modal-ov" id="proposalsModal" style="display:none">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-hd">
+      <div class="modal-title" id="proposalsModalTitle">Proposals</div>
+      <button class="modal-x" onclick="closeModal('proposalsModal')">✕</button>
+    </div>
+    <div class="modal-body" id="proposalsList" style="max-height:70vh;overflow-y:auto"></div>
+    <div class="modal-ft">
+      <button class="btn btn-g" onclick="closeModal('proposalsModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROPOSAL DETAIL MODAL ── -->
+<div class="modal-ov" id="proposalDetailModal" style="display:none">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-hd">
+      <div class="modal-title" id="proposalDetailTitle">Full Proposal</div>
+      <button class="modal-x" onclick="closeModal('proposalDetailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="proposalDetailBody" style="max-height:75vh;overflow-y:auto"></div>
+    <div class="modal-ft">
+      <button class="btn btn-g" onclick="closeModal('proposalDetailModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+
