@@ -8,10 +8,11 @@ const fs      = require('fs');
 const sequelize = require('./config/database');
 const User         = require('./models/User');
 const RFP          = require('./models/RFP');
-const Post         = require('./models/Post');
+let Post, Proposal;
+try { Post     = require('./models/Post');     } catch(e) { console.warn('⚠️  models/Post not found'); }
+try { Proposal = require('./models/Proposal'); } catch(e) { console.warn('⚠️  models/Proposal not found'); }
 const Message      = require('./models/Message');
 const Notification = require('./models/Notification');
-const Proposal     = require('./models/Proposal');
 
 // ── Route files ────────────────────────────────────────────────────
 const ext               = require('./routes/extension');        // ← NEW
@@ -25,17 +26,21 @@ const publicRoutes      = require('./routes/public');
 // ── Associations ───────────────────────────────────────────────────
 User.hasMany(RFP,  { foreignKey: 'client_id',  as: 'rfps'   });
 RFP.belongsTo(User,  { foreignKey: 'client_id',  as: 'client' });
-User.hasMany(Post,     { foreignKey: 'author_id',      as: 'posts'         });
-Post.belongsTo(User,     { foreignKey: 'author_id',      as: 'author'        });
+if (Post) {
+  User.hasMany(Post,     { foreignKey: 'author_id',      as: 'posts'   });
+  Post.belongsTo(User,   { foreignKey: 'author_id',      as: 'author'  });
+}
 User.hasMany(Message,  { foreignKey: 'sender_id',      as: 'sentMessages'  });
 User.hasMany(Message,  { foreignKey: 'receiver_id',    as: 'recvMessages'  });
 Message.belongsTo(User,  { foreignKey: 'sender_id',      as: 'sender'        });
 Message.belongsTo(User,  { foreignKey: 'receiver_id',    as: 'receiver'      });
 User.hasMany(Notification,{ foreignKey: 'user_id',       as: 'notifications' });
-RFP.hasMany(Proposal,  { foreignKey: 'rfp_id',         as: 'proposals'     });
-Proposal.belongsTo(RFP,  { foreignKey: 'rfp_id',         as: 'rfp'           });
-User.hasMany(Proposal, { foreignKey: 'professional_id', as: 'proposals'    });
-Proposal.belongsTo(User, { foreignKey: 'professional_id', as: 'professional' });
+if (Proposal) {
+  RFP.hasMany(Proposal,   { foreignKey: 'rfp_id',          as: 'proposals'    });
+  Proposal.belongsTo(RFP, { foreignKey: 'rfp_id',          as: 'rfp'          });
+  User.hasMany(Proposal,  { foreignKey: 'professional_id', as: 'proposals'   });
+  Proposal.belongsTo(User,{ foreignKey: 'professional_id', as: 'professional' });
+}
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -116,26 +121,17 @@ async function startServer() {
     const adminEmail = 'ibrtoros@unoliva.com';
     const adminUser  = await User.findOne({ where: { email: adminEmail } });
     if (adminUser) {
-      if (adminUser.role !== 'admin') {
-        await adminUser.update({ role: 'admin' });
-        console.log(`👑 Admin role granted to ${adminEmail}`);
-      }
-      // Reset admin password on every deploy (remove this after first login)
+      if (adminUser.role !== 'admin') await adminUser.update({ role: 'admin' });
       const bcrypt = require('bcryptjs');
-      const hashed = await bcrypt.hash('BuildConnect2025!', 12);
-      await adminUser.update({ password: hashed });
-      console.log(`🔑 Admin password reset to: BuildConnect2025!`);
+      await adminUser.update({ password: await bcrypt.hash('BuildConnect2025!', 12) });
+      console.log(`🔑 Admin password reset: ${adminEmail} / BuildConnect2025!`);
     } else {
-      // Create admin user if not exists
       const bcrypt = require('bcryptjs');
-      const hashed = await bcrypt.hash('BuildConnect2025!', 12);
       await User.create({
         email: adminEmail,
-        password: hashed,
-        name: 'Admin',
-        role: 'admin',
-        is_verified: true,
-        is_active: true,
+        password: await bcrypt.hash('BuildConnect2025!', 12),
+        name: 'Admin', role: 'admin',
+        is_verified: true, is_active: true,
       });
       console.log(`👑 Admin created: ${adminEmail} / BuildConnect2025!`);
     }
