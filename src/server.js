@@ -6,35 +6,40 @@ const path    = require('path');
 const fs      = require('fs');
 
 const sequelize = require('./config/database');
-const User         = require('./models/User');
-const RFP          = require('./models/RFP');
+const User = require('./models/User');
+const RFP  = require('./models/RFP');
+
+// Safe optional models
 let Post, Message, Notification, Proposal;
-try { Post         = require('./models/Post');         } catch(e) {}
-try { Message      = require('./models/Message');      } catch(e) {}
-try { Notification = require('./models/Notification'); } catch(e) {}
-try { Proposal     = require('./models/Proposal');     } catch(e) {}
+try { Post         = require('./models/Post');         } catch(e) { console.warn('⚠️  models/Post missing');         }
+try { Message      = require('./models/Message');      } catch(e) { console.warn('⚠️  models/Message missing');      }
+try { Notification = require('./models/Notification'); } catch(e) { console.warn('⚠️  models/Notification missing'); }
+try { Proposal     = require('./models/Proposal');     } catch(e) { console.warn('⚠️  models/Proposal missing');     }
 
-// ── Route files ────────────────────────────────────────────────────
-const ext               = require('./routes/extension');        // ← NEW
-const authRoutes        = require('./routes/auth');
-const subscriptionRoutes = require('./routes/subscription');
-const adminRoutes       = require('./routes/admin');
-const emailRoutes       = require('./routes/email');
-const rfpRoutes         = require('./routes/rfp');
-const publicRoutes      = require('./routes/public');
+// Safe optional routes
+let ext, subscriptionRoutes, emailRoutes, publicRoutes;
+try { ext               = require('./routes/extension');    } catch(e) { console.warn('⚠️  routes/extension missing');    }
+try { subscriptionRoutes = require('./routes/subscription');} catch(e) { console.warn('⚠️  routes/subscription missing'); }
+try { emailRoutes       = require('./routes/email');        } catch(e) { console.warn('⚠️  routes/email missing');        }
+try { publicRoutes      = require('./routes/public');       } catch(e) { console.warn('⚠️  routes/public missing');       }
 
-// ── Associations ───────────────────────────────────────────────────
-User.hasMany(RFP,  { foreignKey: 'client_id',  as: 'rfps'   });
-RFP.belongsTo(User,  { foreignKey: 'client_id',  as: 'client' });
+// Required routes
+const authRoutes  = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const rfpRoutes   = require('./routes/rfp');
+
+// ── Associations ──────────────────────────────────────────────────
+User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps'   });
+RFP.belongsTo(User, { foreignKey: 'client_id', as: 'client' });
 if (Post) {
-  User.hasMany(Post,   { foreignKey: 'author_id', as: 'posts'  });
+  User.hasMany(Post, { foreignKey: 'author_id', as: 'posts'  });
   Post.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
 }
 if (Message) {
-  User.hasMany(Message,    { foreignKey: 'sender_id',   as: 'sentMessages' });
-  User.hasMany(Message,    { foreignKey: 'receiver_id', as: 'recvMessages' });
-  Message.belongsTo(User,  { foreignKey: 'sender_id',   as: 'sender'       });
-  Message.belongsTo(User,  { foreignKey: 'receiver_id', as: 'receiver'     });
+  User.hasMany(Message, { foreignKey: 'sender_id',   as: 'sentMessages' });
+  User.hasMany(Message, { foreignKey: 'receiver_id', as: 'recvMessages' });
+  Message.belongsTo(User, { foreignKey: 'sender_id',   as: 'sender'   });
+  Message.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' });
 }
 if (Notification) {
   User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
@@ -49,8 +54,7 @@ if (Proposal) {
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// ── Middleware ─────────────────────────────────────────────────────
-// Helmet with COEP/CORP disabled so uploaded images load cross-origin
+// ── Middleware ────────────────────────────────────────────────────
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: false,
@@ -60,61 +64,47 @@ app.use(cors({ origin: '*', credentials: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ── Static uploads folder ──────────────────────────────────────────
+// ── Static uploads ────────────────────────────────────────────────
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-// Serve uploads with headers that allow cross-origin image loading
 app.use('/uploads', (req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Access-Control-Allow-Origin', '*');
   next();
 }, express.static(uploadsDir));
 
-// ── Health / root ──────────────────────────────────────────────────
+// ── Health / root ─────────────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.json({
-    status      : 'OK',
-    timestamp   : new Date().toISOString(),
-    uptime      : process.uptime(),
-    environment : process.env.NODE_ENV || 'development',
-  });
+  res.json({ status: 'OK', timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
-
 app.get('/', (req, res) => {
-  res.json({
-    message   : 'BuildConnect Pro API 🚀',
-    version   : '1.0.0',
-    status    : 'running',
-    endpoints : { health: '/health', auth: '/api/v1/auth', rfps: '/api/v1/rfps', admin: '/api/v1/admin' },
-  });
+  res.json({ message: 'BuildConnect Pro API 🚀', version: '1.0.0', status: 'running' });
 });
 
-// ══════════════════════════════════════════════════════════════════
-//  ROUTES  —  extension MUST be first so its routes take priority
-// ══════════════════════════════════════════════════════════════════
-app.use('/api/v1', ext);                              // ← FIRST (posts, rfps, messages, etc.)
-app.use('/api/v1/auth',         authRoutes);
-app.use('/api/v1/rfps',         rfpRoutes);
-app.use('/api/v1/subscription', subscriptionRoutes);
-app.use('/api/v1/admin',        adminRoutes);
-app.use('/api/v1/email',        emailRoutes);
-app.use('/api/v1/public',       publicRoutes);
+// ── Routes ────────────────────────────────────────────────────────
+if (ext)               app.use('/api/v1',               ext);
+app.use('/api/v1/auth',  authRoutes);
+app.use('/api/v1/rfps',  rfpRoutes);
+app.use('/api/v1/admin', adminRoutes);
+if (subscriptionRoutes) app.use('/api/v1/subscription', subscriptionRoutes);
+if (emailRoutes)        app.use('/api/v1/email',        emailRoutes);
+if (publicRoutes)       app.use('/api/v1/public',       publicRoutes);
 
-// ── 404 ────────────────────────────────────────────────────────────
+// ── 404 ───────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ success: false, error: { message: 'Route not found', statusCode: 404 } });
 });
 
-// ── Global error handler ───────────────────────────────────────────
+// ── Error handler ─────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(err.statusCode || 500).json({
-    success : false,
-    error   : { message: err.message || 'Internal server error', statusCode: err.statusCode || 500 },
+    success: false,
+    error: { message: err.message || 'Internal server error', statusCode: err.statusCode || 500 },
   });
 });
 
-// ── Start ──────────────────────────────────────────────────────────
+// ── Start ─────────────────────────────────────────────────────────
 async function startServer() {
   try {
     await sequelize.authenticate();
@@ -143,7 +133,6 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-      console.log(`💚 Health: http://localhost:${PORT}/health`);
       console.log(`👑 Admin: ${adminEmail}`);
     });
   } catch (error) {
