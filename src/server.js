@@ -9,10 +9,10 @@ const sequelize = require('./config/database');
 const User         = require('./models/User');
 const RFP          = require('./models/RFP');
 let Post, Message, Notification, Proposal;
-try { Post         = require('./models/Post');         } catch(e) { console.warn('⚠️  Post missing');         }
-try { Message      = require('./models/Message');      } catch(e) { console.warn('⚠️  Message missing');      }
-try { Notification = require('./models/Notification'); } catch(e) { console.warn('⚠️  Notification missing'); }
-try { Proposal     = require('./models/Proposal');     } catch(e) { console.warn('⚠️  Proposal missing');     }
+try { Post         = require('./models/Post');         } catch(e) {}
+try { Message      = require('./models/Message');      } catch(e) {}
+try { Notification = require('./models/Notification'); } catch(e) {}
+try { Proposal     = require('./models/Proposal');     } catch(e) {}
 
 // ── Route files ────────────────────────────────────────────────────
 const ext               = require('./routes/extension');        // ← NEW
