@@ -1,41 +1,13 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/database');
-
-const Notification = sequelize.define('Notification', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  user_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  type: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  message: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  is_read: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  link: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-}, {
-  tableName: 'notifications',
-  timestamps: true,
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-});
-
+class Notification extends Model {}
+Notification.init({
+  id:         { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  user_id:    { type: DataTypes.UUID, allowNull: false },
+  type:       { type: DataTypes.STRING, allowNull: false },
+  title:      { type: DataTypes.STRING, allowNull: true },
+  message:    { type: DataTypes.TEXT, allowNull: true },
+  is_read:    { type: DataTypes.BOOLEAN, defaultValue: false },
+  data:       { type: DataTypes.JSON, defaultValue: {} },
+},{ sequelize, tableName: 'notifications' });
 module.exports = Notification;
