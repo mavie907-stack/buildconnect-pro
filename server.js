@@ -8,10 +8,11 @@ const fs      = require('fs');
 const sequelize = require('./config/database');
 const User         = require('./models/User');
 const RFP          = require('./models/RFP');
-const Post         = require('./models/Post');
-const Message      = require('./models/Message');
-const Notification = require('./models/Notification');
-const Proposal     = require('./models/Proposal');
+let Post, Message, Notification, Proposal;
+try { Post         = require('./models/Post');         } catch(e) {}
+try { Message      = require('./models/Message');      } catch(e) {}
+try { Notification = require('./models/Notification'); } catch(e) {}
+try { Proposal     = require('./models/Proposal');     } catch(e) {}
 
 // ── Route files ────────────────────────────────────────────────────
 const ext               = require('./routes/extension');        // ← NEW
