@@ -1,4 +1,3 @@
-const { Router } = require('express');
 const {
   getStats, getAllUsers, getUserDetails, updateUser, deleteUser,
   getAllProjects, updateProjectStatus, deleteProject, globalSearch,
