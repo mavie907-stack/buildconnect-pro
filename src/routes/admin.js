@@ -18,6 +18,7 @@ try {
   if (auth.authenticate) authenticate = auth.authenticate;
   if (adm.isAdmin)       isAdmin      = adm.isAdmin;
 } catch(e) { console.warn('middleware load error:', e.message); }
+const { isAdmin } = require('../middleware/admin');
 
 const router = Router();
 
