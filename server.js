@@ -15,7 +15,7 @@ try { Notification = require('./models/Notification'); } catch(e) {}
 try { Proposal     = require('./models/Proposal');     } catch(e) {}
 
 // ── Route files ────────────────────────────────────────────────────
-let ext; try { ext = require('./routes/extension'); } catch(e) { console.warn('routes/extension missing'); }
+let ext; try { ext = require('./routes/extension'); } catch(e) {}
 const authRoutes        = require('./routes/auth');
 const subscriptionRoutes = require('./routes/subscription');
 const adminRoutes       = require('./routes/admin');
@@ -84,7 +84,7 @@ app.get('/', (req, res) => {
 // ══════════════════════════════════════════════════════════════════
 //  ROUTES  —  extension MUST be first so its routes take priority
 // ══════════════════════════════════════════════════════════════════
-app.use('/api/v1', ext);                              // ← FIRST (posts, rfps, messages, etc.)
+if (ext) app.use('/api/v1', ext);                           // ← FIRST (posts, rfps, messages, etc.)
 app.use('/api/v1/auth',         authRoutes);
 app.use('/api/v1/rfps',         rfpRoutes);
 app.use('/api/v1/subscription', subscriptionRoutes);
