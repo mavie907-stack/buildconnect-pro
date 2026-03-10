@@ -15,7 +15,7 @@ try { Notification = require('./models/Notification'); } catch(e) {}
 try { Proposal     = require('./models/Proposal');     } catch(e) {}
 
 // ── Route files ────────────────────────────────────────────────────
-const ext               = require('./routes/extension');        // ← NEW
+let ext; try { ext = require('./routes/extension'); } catch(e) { console.warn('routes/extension missing'); }
 const authRoutes        = require('./routes/auth');
 const subscriptionRoutes = require('./routes/subscription');
 const adminRoutes       = require('./routes/admin');
