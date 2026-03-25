@@ -26,7 +26,7 @@ try { Event        = require('./models/Event');        } catch(e) { console.warn
 try { Library      = require('./models/Library');      } catch(e) { console.warn('⚠️  models/Library missing');      }
 try { Badge        = require('./models/Badge');        } catch(e) { console.warn('⚠️  models/Badge missing');        }
 
-// ── Associations (MUST be before routes) ──────────────────────────
+// ── Associations ───────────────────────────────────────────────────
 User.hasMany(RFP, { foreignKey: 'client_id', as: 'rfps'   });
 RFP.belongsTo(User, { foreignKey: 'client_id', as: 'client' });
 if (Post) {
@@ -86,8 +86,8 @@ app.use(cors({ origin: '*', credentials: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ── Static uploads ─────────────────────────────────────────────────
-const uploadsDir = path.join(process.cwd(), 'uploads');
+// ── Static uploads (Vercel'de /tmp kullan, kalıcı değil) ───────────
+const uploadsDir = process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads', (req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -126,21 +126,25 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ── Start ──────────────────────────────────────────────────────────
-async function startServer() {
+// ── DB sync + Admin setup (her istekte değil, sadece lokal başlangıçta) ──
+let isInitialized = false;
+
+async function initialize() {
+  if (isInitialized) return;
+  isInitialized = true;
   try {
     await sequelize.authenticate();
     console.log('✅ Database connected!');
-    await sequelize.sync({ alter: { drop: false } }); // creates missing tables/cols, never alters existing column types
+    await sequelize.sync({ alter: { drop: false } });
     console.log('✅ Database synchronized!');
 
-    const adminEmail    = 'ibrtoros@unoliva.com';
-    const adminPassword = 'BuildConnect2025!';
+    const adminEmail    = process.env.ADMIN_EMAIL    || 'ibrtoros@unoliva.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'BuildConnect2025!';
     const adminUser     = await User.findOne({ where: { email: adminEmail } });
     if (adminUser) {
       if (adminUser.role !== 'admin') await adminUser.update({ role: 'admin' });
       await adminUser.update({ password: adminPassword });
-      console.log(`🔑 Admin password reset: ${adminEmail} / ${adminPassword}`);
+      console.log(`🔑 Admin password reset: ${adminEmail}`);
     } else {
       await User.create({
         email: adminEmail,
@@ -148,24 +152,35 @@ async function startServer() {
         name: 'Admin', role: 'admin',
         is_verified: true, is_active: true,
       });
-      console.log(`👑 Admin created: ${adminEmail} / ${adminPassword}`);
+      console.log(`👑 Admin created: ${adminEmail}`);
     }
-
-    const httpServer = http.createServer(app);
-    if (socketModule) {
-      socketModule.initSocket(httpServer);
-    }
-    httpServer.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-      console.log(`👑 Admin: ${adminEmail}`);
-      if (socketModule) console.log(`⚡ WebSockets: enabled`);
-    });
   } catch (error) {
-    console.error('❌ Failed to start:', error);
-    process.exit(1);
+    console.error('❌ DB init failed:', error);
+    isInitialized = false; // retry next request
   }
 }
 
-startServer();
+// Vercel: her request öncesi DB'yi başlat
+app.use(async (req, res, next) => {
+  await initialize();
+  next();
+});
+
+// ── Lokal çalışma (Vercel'de bu blok çalışmaz) ────────────────────
+if (require.main === module) {
+  initialize().then(() => {
+    const httpServer = http.createServer(app);
+    if (socketModule) socketModule.initSocket(httpServer);
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+      if (socketModule) console.log(`⚡ WebSockets: enabled`);
+    });
+  }).catch(err => {
+    console.error('❌ Failed to start:', err);
+    process.exit(1);
+  });
+}
+
+// ── Vercel için export ─────────────────────────────────────────────
 module.exports = app;
