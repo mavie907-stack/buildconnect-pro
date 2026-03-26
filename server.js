@@ -140,15 +140,18 @@ async function initialize() {
 
     const adminEmail    = process.env.ADMIN_EMAIL    || 'ibrtoros@unoliva.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'BuildConnect2025!';
+    const bcrypt = require('bcryptjs');
     const adminUser     = await User.findOne({ where: { email: adminEmail } });
     if (adminUser) {
       if (adminUser.role !== 'admin') await adminUser.update({ role: 'admin' });
-      await adminUser.update({ password: adminPassword });
+      // Şifreyi manuel hash'le — beforeUpdate hook çift hash yapmasın
+      const hashed = await bcrypt.hash(adminPassword, 12);
+      await User.update({ password: hashed }, { where: { email: adminEmail }, hooks: false });
       console.log(`🔑 Admin password reset: ${adminEmail}`);
     } else {
       await User.create({
         email: adminEmail,
-        password: adminPassword,
+        password: adminPassword, // beforeCreate hook hash'leyecek
         name: 'Admin', role: 'admin',
         is_verified: true, is_active: true,
       });
